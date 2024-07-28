@@ -49,4 +49,4 @@ class DeePC:
     clear()
     control(r) -> np.ndarray
 ```
-which stores the last `T_ini` values provided via `append(u, v)` and returns the optimal control for a given reference trajectory via `control(r)` once enough data has been appended. This can be probed with `is_initialized()`.
+which stores the last `T_ini` values provided via `append(u, y)` and returns the optimal control for a given reference trajectory via `control(r)` once enough data has been appended. This can be probed with `is_initialized()`.
