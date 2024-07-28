@@ -90,7 +90,7 @@ def deePC(
         )
 
 
-class DeePController:
+class DeePC:
     def __init__(
         self,
         u_d: np.ndarray,

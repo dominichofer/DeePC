@@ -1,4 +1,4 @@
-from .math import clamp, left_pseudoinverse, hankel_matrix
-from .deepc import deePC
+from .math import clamp
+from .deepc import deePC, DeePC
 
-__all__ = ["clamp", "left_pseudoinverse", "hankel_matrix", "deePC"]
+__all__ = ["clamp", "deePC", "DeePC"]
