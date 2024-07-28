@@ -13,23 +13,22 @@ def lagged_response(u: np.ndarray, lag: int, y_ini) -> np.ndarray:
 
 
 class TestUnconstrained(unittest.TestCase):
-    def test_proportional_system_lag_0(self):
-        u_d = np.array(range(15))
-        y_d = u_d
-        u_ini = np.array([0])
+    def test_proportional_system_lag_1(self):
+        u_d = np.array(np.sin(np.linspace(0, 2 * np.pi, 15)))
+        y_d = lagged_response(u_d, lag=1, y_ini=1)
+        u_ini = np.array([1])
         y_ini = np.array([0])
-        r = np.array([10, 5])
+        r = np.array([0.5, 0.5])
 
         u_star = deePC(u_d, y_d, u_ini, y_ini, r)
         print(u_star)
 
-    def test_proportional_system_lag_1(self):
-        u_d = np.array(range(15))
-        y_d = lagged_response(u_d, lag=1, y_ini=0)
-        print(y_d)
+    def test_proportional_system_lag_2(self):
+        u_d = np.array(np.sin(np.linspace(0, 2 * np.pi, 15)))
+        y_d = lagged_response(u_d, lag=2, y_ini=1)
         u_ini = np.array([0, 1])
         y_ini = np.array([0, 0])
-        r = np.array([10, 5])
+        r = np.array([0.5, 0.5])
 
         u_star = deePC(u_d, y_d, u_ini, y_ini, r)
         print(u_star)
