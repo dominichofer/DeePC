@@ -177,8 +177,8 @@ class DeePC:
         return len(self.u_ini) == self.T_ini and len(self.y_ini) == self.T_ini
 
     def append(self, u: np.ndarray, y: np.ndarray) -> None:
-        "Appends a control input and a trajectory to the internal state."
-        self.u_ini.append(u)
+        "Appends a control input and an output measurement to the internal state."
+        self.u_ini.append(u) # is this a circular buffer? or keeps growing infinite?
         self.y_ini.append(y)
 
     def clear(self) -> None:
