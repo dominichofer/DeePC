@@ -95,8 +95,8 @@ class DeePC:
         self,
         u_d: np.ndarray,
         y_d: np.ndarray,
-        T_ini: int,
-        r_len: int,
+        T_ini: int,# carefull, different from the other function
+        r_len: int,# carefull, different from the other function
         Q: np.ndarray | None = None,
         R: np.ndarray | None = None,
         control_constrain_fkt: Callable | None = None,
@@ -110,8 +110,8 @@ class DeePC:
         Holds the last T_ini control inputs and trajectories to initiate the state.
         Args:
             u_d: Control inputs from an offline procedure.
-            y_d: Trajectories from an offline procedure.
-            T_ini: Number of initial control inputs and trajectories.
+            y_d: Outputs from an offline procedure.
+            T_ini: Number of initial control inputs and outputs / trajectories.
             r_len: Length of the reference trajectory.
             Q: Output cost matrix, defaults to identity matrix.
             R: Control cost matrix, defaults to zero matrix.
@@ -170,7 +170,7 @@ class DeePC:
         # This has an explicit solution u_star = (B_u^T * Q * B_u + R)^-1 * (B_u^T * Q * y).
 
         # We precompute the matrix G = B_u^T * Q * B_u + R.
-        self.G = self.B_u.T @ Q @ self.B_u + R
+        self.G = self.B_u.T @ self.Q @ self.B_u + self.R
 
     def is_initialized(self) -> bool:
         "Returns whether the internal state is initialized."
@@ -196,8 +196,16 @@ class DeePC:
         assert len(self.y_ini) == self.T_ini, "Not enough initial trajectories."
         assert len(r) == self.r_len, "Reference trajectory has wrong length."
 
+        ## to add assert the datatype. had a nasty bug beacause on u-ini was int and the other np array
+        #u_ini = np.array([np.array(x) for x in self.u_ini])
+        #y_ini = np.array([np.array(x) for x in self.y_ini])
+
         x = np.block([self.u_ini, self.y_ini])
         u_star = np.linalg.solve(self.G, self.B_u.T @ self.Q @ (r - self.B_x @ x).T)
+        
+        #print(u_star)
+        # this returns a 20 by 20 matrix (in my case). but not a series of control inputs 
+
         if self.control_constrain_fkt is None:
             return u_star
         else:
