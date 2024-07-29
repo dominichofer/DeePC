@@ -171,7 +171,7 @@ class DeePC:
         # This has an explicit solution u_star = (B_u^T * Q * B_u + R)^-1 * (B_u^T * Q * y).
 
         # We precompute the matrix G = B_u^T * Q * B_u + R.
-        self.G = self.B_u.T @ Q @ self.B_u + R
+        self.G = self.B_u.T @ self.Q @ self.B_u + self.R
 
     def is_initialized(self) -> bool:
         "Returns whether the internal state is initialized."
