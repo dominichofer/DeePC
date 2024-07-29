@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from deepc import deePC
+from deepc import deePC, DeePC
 
 
 def lagged_response(u: np.ndarray, lag: int, y_ini) -> np.ndarray:
@@ -31,6 +31,18 @@ class TestUnconstrained(unittest.TestCase):
         r = np.array([0.5, 0.5])
 
         u_star = deePC(u_d, y_d, u_ini, y_ini, r)
+        print(u_star)
+
+
+class TestController(unittest.TestCase):
+    def test_proportional_system_lag_1(self):
+        u_d = np.array(np.sin(np.linspace(0, 2 * np.pi, 15)))
+        y_d = lagged_response(u_d, lag=1, y_ini=1)
+        r = np.array([0.5, 0.5])
+
+        controller = DeePC(u_d, y_d, T_ini=1, r_len=2)
+        controller.append(u=1, y=0)
+        u_star = controller.control(r)
         print(u_star)
 
 
