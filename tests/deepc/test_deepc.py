@@ -38,7 +38,7 @@ class TestUnconstrained(unittest.TestCase):
         u_d = np.empty(0)
         y_d = np.empty(0)
         for i in range(50):
-            u = np.array([np.sin(i)])
+            u = np.array([np.sin(i / 10)])
             u_d = np.append(u_d, u)
             y_d = np.append(y_d, system.step(u))
 
@@ -54,6 +54,34 @@ class TestUnconstrained(unittest.TestCase):
             y_star = np.append(y_star, system.step(np.array([u])))
         print(u_star)
         print(y_star)
+
+    def test_1D_LTI2(self):
+        system = System(
+            A=np.array([[0.9]]),
+            B=np.array([[0.1]]),
+            C=np.array([[1]]),
+            D=np.array([[0]]),
+            x_ini=np.array([0]),
+        )
+        u_d = np.empty(0)
+        y_d = np.empty(0)
+        for i in range(50):
+            u = np.array([np.sin(i / 10)])
+            u_d = np.append(u_d, u)
+            y_d = np.append(y_d, system.step(u))
+        print(u_d, y_d)
+
+        controller = DeePC(u_d, y_d, T_ini=4, r_len=1)
+        for i in range(4):
+            controller.append(u=np.array([0]), y=np.array([0]))
+
+        # Go to 0.1
+        for _ in range(10):
+            u_star = controller.control(np.array([0.1]))
+            u = u_star
+            y = system.step(u_star)
+            print(u, y)
+            controller.append(u, y)
 
     def test_proportional_system_lag_1(self):
         u_d = np.array(np.sin(np.linspace(0, 2 * np.pi, 15)))
