@@ -125,8 +125,8 @@ class DeePC:
         self.y_ini: collections.deque[np.ndarray] = collections.deque(maxlen=T_ini)
         self.T_ini = T_ini
         self.r_len = r_len
-        self.Q = Q or np.eye(r_len)
-        self.R = R or np.zeros((r_len, r_len))
+        self.Q = Q if Q is not None else np.eye(r_len) #problems with truth of np.array with more than one value
+        self.R = R if R is not None else np.zeros((r_len, r_len))
         self.control_constrain_fkt = control_constrain_fkt
         self.max_pgm_iterations = max_pgm_iterations
         self.pgm_tolerance = pgm_tolerance
@@ -143,7 +143,7 @@ class DeePC:
         # subject to: [U_p; Y_p; U_f; Y_f] * g = [u_ini; y_ini; u; y]
 
         # We define
-        A = np.block([[U_p], [Y_p], [U_f]])
+        A = np.block([[U_p], [Y_p], [U_f]]) #M
         # x = [u_ini; y_ini]
         # to get
         # A * g = [x; u]  (1)
@@ -155,7 +155,7 @@ class DeePC:
         # Substituting g in (2) gives Y_f * pinv(A) * [x; u] = y.
 
         # We define
-        B = Y_f @ left_pseudoinverse(A)
+        B = Y_f @ left_pseudoinverse(A) #Mbar
         # and get B * [x; u] = y.
 
         # We define (B_x, B_u) := B such that B_x * x + B_u * u = y.
@@ -196,12 +196,14 @@ class DeePC:
         assert len(self.y_ini) == self.T_ini, "Not enough initial trajectories."
         assert len(r) == self.r_len, "Reference trajectory has wrong length."
 
-        ## to add assert the datatype. had a nasty bug beacause on u-ini was int and the other np array
+        ## to add assert the datatype. had a nasty bug beacause the inital u_ini was int and the others were np array
         #u_ini = np.array([np.array(x) for x in self.u_ini])
         #y_ini = np.array([np.array(x) for x in self.y_ini])
 
-        x = np.block([self.u_ini, self.y_ini])
-        u_star = np.linalg.solve(self.G, self.B_u.T @ self.Q @ (r - self.B_x @ x).T)
+        #x = np.block([self.u_ini, self.y_ini])
+        x = np.concatenate([self.u_ini, self.y_ini]).reshape(-1, 1)  # Reshape x to be a column vector
+        y = r - self.B_x @ x #size m
+        u_star = np.linalg.solve(self.G, self.B_u.T @ self.Q @ y) # size n if Bu (mxn)
         
         #print(u_star)
         # this returns a 20 by 20 matrix (in my case). but not a series of control inputs 
