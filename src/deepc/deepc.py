@@ -126,8 +126,12 @@ class DeePC:
         self.y_ini: collections.deque[np.ndarray] = collections.deque(maxlen=T_ini)
         self.T_ini = T_ini
         self.r_len = r_len
-        self.Q = Q or np.eye(r_len)
-        self.R = R or np.zeros((r_len, r_len))
+        if Q is None:
+            Q = np.eye(r_len)
+        if R is None:
+            R = np.zeros((r_len, r_len))
+        self.Q = Q
+        self.R = R
         self.control_constrain_fkt = control_constrain_fkt
         self.max_pgm_iterations = max_pgm_iterations
         self.pgm_tolerance = pgm_tolerance
@@ -178,7 +182,7 @@ class DeePC:
         return len(self.u_ini) == self.T_ini and len(self.y_ini) == self.T_ini
 
     def append(self, u: np.ndarray, y: np.ndarray) -> None:
-        "Appends a control input and a trajectory to the internal state."
+        "Appends a control input and an output measurement to the internal state."
         self.u_ini.append(u)
         self.y_ini.append(y)
 
@@ -196,8 +200,8 @@ class DeePC:
         assert self.is_initialized(), "Internal state is not initialized."
         assert len(r) == self.r_len, "Reference trajectory has wrong length."
 
-        x = np.block([self.u_ini, self.y_ini])
-        u_star = np.linalg.solve(self.G, self.B_u.T @ self.Q @ (r - self.B_x @ x).T)
+        x = np.concatenate([self.u_ini, self.y_ini]).reshape(-1, 1)
+        u_star = np.linalg.solve(self.G, self.B_u.T @ self.Q @ (r - self.B_x @ x))[0]
         if self.control_constrain_fkt is None:
             return u_star
         else:
