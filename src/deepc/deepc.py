@@ -121,6 +121,7 @@ class DeePC:
             pgm_tolerance: Tolerance for the PGM algorithm.
         """
         assert len(u_d) == len(y_d), "u_d and y_d must have the same length."
+        assert T_ini > 0, "T_ini must be greater than zero."
         self.u_ini: collections.deque[np.ndarray] = collections.deque(maxlen=T_ini)
         self.y_ini: collections.deque[np.ndarray] = collections.deque(maxlen=T_ini)
         self.T_ini = T_ini
@@ -192,8 +193,7 @@ class DeePC:
         Args:
             r: Reference trajectory.
         """
-        assert len(self.u_ini) == self.T_ini, "Not enough initial control inputs."
-        assert len(self.y_ini) == self.T_ini, "Not enough initial trajectories."
+        assert self.is_initialized(), "Internal state is not initialized."
         assert len(r) == self.r_len, "Reference trajectory has wrong length."
 
         ## to add assert the datatype. had a nasty bug beacause the inital u_ini was int and the others were np array

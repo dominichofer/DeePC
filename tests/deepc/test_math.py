@@ -16,40 +16,36 @@ class TestClamp(unittest.TestCase):
 
 class TestLeftPseudoinverse(unittest.TestCase):
     def test_1x1(self):
-        mat = np.array([[1]])
-        expected = np.array([[1]])
-        np.testing.assert_array_equal(left_pseudoinverse(mat), expected)
+        mat = np.array([[2]])
+        i = left_pseudoinverse(mat) @ mat
+        np.testing.assert_array_equal(i, np.eye(1))
 
     def test_2x2(self):
         mat = np.array([[1, 2], [3, 4]])
-        expected = np.array([[-2, 1], [1.5, -0.5]])
-        np.testing.assert_array_almost_equal(left_pseudoinverse(mat), expected)
+        i = left_pseudoinverse(mat) @ mat
+        np.testing.assert_array_almost_equal(i, np.eye(2))
 
     def test_3x2(self):
         mat = np.array([[1, 2], [3, 4], [5, 6]])
-        expected = np.array(
-            [[-1.33333333, -0.33333333, 0.66666667], [1.08333333, 0.33333333, -0.41666667]]
-        )
-        np.testing.assert_array_almost_equal(left_pseudoinverse(mat), expected)
+        i = left_pseudoinverse(mat) @ mat
+        np.testing.assert_array_almost_equal(i, np.eye(2))
 
 
 class TestRightPseudoinverse(unittest.TestCase):
     def test_1x1(self):
-        mat = np.array([[1]])
-        expected = np.array([[1]])
-        np.testing.assert_array_equal(right_pseudoinverse(mat), expected)
+        mat = np.array([[2]])
+        i = mat @ right_pseudoinverse(mat)
+        np.testing.assert_array_equal(i, np.eye(1))
 
     def test_2x2(self):
         mat = np.array([[1, 2], [3, 4]])
-        expected = np.array([[-2, 1], [1.5, -0.5]])
-        np.testing.assert_array_almost_equal(right_pseudoinverse(mat), expected)
+        i = mat @ right_pseudoinverse(mat)
+        np.testing.assert_array_almost_equal(i, np.eye(2))
 
     def test_3x2(self):
         mat = np.array([[1, 2, 3], [4, 5, 6]])
-        expected = np.array(
-            [[-0.94444444, 0.44444444], [-0.11111111, 0.11111111], [0.72222222, -0.22222222]]
-        )
-        np.testing.assert_array_almost_equal(right_pseudoinverse(mat), expected)
+        i = mat @ right_pseudoinverse(mat)
+        np.testing.assert_array_almost_equal(i, np.eye(2))
 
 
 class TestHankelMatrix(unittest.TestCase):
