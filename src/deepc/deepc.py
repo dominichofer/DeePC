@@ -3,6 +3,7 @@ from typing import Callable
 import numpy as np
 from .math import left_pseudoinverse, hankel_matrix, projected_gradient_method
 
+from numpy.linalg import inv
 
 def deePC(
     u_d: np.ndarray,
@@ -156,7 +157,8 @@ class DeePC:
         # Substituting g in (2) gives Y_f * pinv(A) * [x; u] = y.
 
         # We define
-        B = Y_f @ left_pseudoinverse(A) #Mbar
+        #todo B is inconsistent with my code
+        B = Y_f @ (A.T@inv( A@A.T )) #Mbar
         # and get B * [x; u] = y.
 
         # We define (B_x, B_u) := B such that B_x * x + B_u * u = y.
