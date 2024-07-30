@@ -25,7 +25,7 @@ def hankel_matrix(rows: int, data: np.ndarray) -> np.ndarray:
     """
     # Generalization of https://en.wikipedia.org/wiki/Hankel_matrix to arbitrary rows.
     cols = len(data) - rows + 1
-    return np.matrix([data[i : i + cols] for i in range(rows)])
+    return np.array([data[i : i + cols] for i in range(rows)])
 
 
 def projected_gradient_method(
