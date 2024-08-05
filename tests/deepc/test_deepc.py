@@ -1,120 +1,99 @@
 import unittest
 import numpy as np
-from deepc import deePC, DeePC
+from deepc import deePC, Controller
+from deepc.lti import DescreteLTI, LaggedLTI
 
 
-class System:
-    def __init__(self, A, B, C, D, x_ini) -> None:
-        self.A = A
-        self.B = B
-        self.C = C
-        self.D = D
-        self.x = x_ini
+class TestDeePC(unittest.TestCase):
+    def test_unconstrained_lag_0(self):
+        system = LaggedLTI(lag=0, x_ini=[1])
+        assert system.is_controllable()
+        assert system.is_observable()
+        assert system.is_stable()
 
-    def step(self, u):
-        self.x = self.A @ self.x + self.B @ u
-        y = self.C @ self.x + self.D @ u
-        return y
+        # Offline data
+        u_d = [1, 2, 3, 4, 5]
+        y_d = system.apply_multiple(u_d)
 
+        # Initial conditions
+        u_ini = [2]
+        y_ini = system.apply_multiple(u_ini)
 
-def lagged_response(u: np.ndarray, lag: int, y_ini) -> np.ndarray:
-    y = np.zeros(len(u))
-    for i in range(lag):
-        y[i] = y_ini
-    for i in range(lag, len(u)):
-        y[i] = u[i - lag]
-    return y
+        # Reference trajectory
+        r = [4]
 
+        u_star = deePC(u_d, y_d, u_ini, y_ini, r)
 
-class TestUnconstrained(unittest.TestCase):
-    def test_1D_LTI(self):
-        system = System(
-            A=np.array([[0.9]]),
-            B=np.array([[0.1]]),
-            C=np.array([[1]]),
-            D=np.array([[0]]),
-            x_ini=np.array([0]),
+        y_star = system.apply(u_star)
+        np.testing.assert_array_almost_equal(y_star, r)
+
+    def test_unconstrained_2D_LTI(self):
+        system = DescreteLTI(
+            A=[[0.9, -0.2], [0.7, 0.1]],
+            B=[[0.1], [0]],
+            C=[[1, 0]],
+            D=[[0.1]],
+            x_ini=[1, 1],
         )
-        u_d = np.empty(0)
-        y_d = np.empty(0)
-        for i in range(50):
-            u = np.array([np.sin(i / 10)])
-            u_d = np.append(u_d, u)
-            y_d = np.append(y_d, system.step(u))
+        assert system.is_controllable()
+        assert system.is_observable()
+        assert system.is_stable()
 
-        u_ini = np.array([0, 0, 0, 0])
-        y_ini = np.array([0, 0, 0, 0])
-        r = np.array([0.5, 0.7])
+        # Offline data
+        u_d = [i * np.sin(i / 20) for i in range(500)]
+        y_d = system.apply_multiple(u_d)
 
-        u_star = deePC(u_d, y_d, u_ini, y_ini, r)
-        y_star = np.empty(0)
-        for u in u_ini:
-            system.step(np.array([u]))
-        for u in u_star:
-            y_star = np.append(y_star, system.step(np.array([u])))
-        print(u_star)
-        print(y_star)
+        # Initial conditions
+        u_ini = [1] * 20
+        y_ini = system.apply_multiple(u_ini)
 
-    def test_1D_LTI2(self):
-        system = System(
-            A=np.array([[0.9]]),
-            B=np.array([[0.1]]),
-            C=np.array([[1]]),
-            D=np.array([[0]]),
-            x_ini=np.array([0]),
-        )
-        u_d = np.empty(0)
-        y_d = np.empty(0)
-        for i in range(50):
-            u = np.array([np.sin(i / 10)])
-            u_d = np.append(u_d, u)
-            y_d = np.append(y_d, system.step(u))
-        print(u_d, y_d)
+        # Reference trajectory
+        r = [3, 3]
 
-        controller = DeePC(u_d, y_d, T_ini=4, r_len=1)
-        for i in range(4):
-            controller.append(u=np.array([0]), y=np.array([0]))
+        u_star = deePC(u_d, y_d, u_ini, y_ini, r, R=0.001 * np.eye(len(r)))
 
-        # Go to 0.1
-        for _ in range(10):
-            u_star = controller.control(np.array([0.1]))
-            u = u_star
-            y = system.step(u_star)
-            print(u, y)
-            controller.append(u, y)
-
-    def test_proportional_system_lag_1(self):
-        u_d = np.array(np.sin(np.linspace(0, 2 * np.pi, 15)))
-        y_d = lagged_response(u_d, lag=1, y_ini=1)
-        u_ini = np.array([1])
-        y_ini = np.array([0])
-        r = np.array([0.5, 0.5])
-
-        u_star = deePC(u_d, y_d, u_ini, y_ini, r)
-        print(u_star)
-
-    def test_proportional_system_lag_2(self):
-        u_d = np.array(np.sin(np.linspace(0, 2 * np.pi, 15)))
-        y_d = lagged_response(u_d, lag=2, y_ini=1)
-        u_ini = np.array([0, 1])
-        y_ini = np.array([0, 0])
-        r = np.array([0.5, 0.5])
-
-        u_star = deePC(u_d, y_d, u_ini, y_ini, r)
-        print(u_star)
+        y_star = system.apply_multiple(u_star)
+        self.assertAlmostEqual(y_star[0], r[0], delta=0.1)
 
 
 class TestController(unittest.TestCase):
-    def test_proportional_system_lag_1(self):
-        u_d = np.array(np.sin(np.linspace(0, 2 * np.pi, 15)))
-        y_d = lagged_response(u_d, lag=1, y_ini=1)
-        r = np.array([0.5, 0.5])
+    def test_unconstrained_2D_LTI(self):
+        system = DescreteLTI(
+            A=[[0.9, -0.2], [0.7, 0.1]],
+            B=[[0.1], [0]],
+            C=[[1, 0]],
+            D=[[0.1]],
+            x_ini=[1, 1],
+        )
+        assert system.is_controllable()
+        assert system.is_observable()
+        assert system.is_stable()
 
-        controller = DeePC(u_d, y_d, T_ini=1, r_len=2)
-        controller.append(u=1, y=0)
-        u_star = controller.control(r)
-        print(u_star)
+        # Offline data
+        u_d = [i * np.sin(i / 20) for i in range(500)]
+        y_d = system.apply_multiple(u_d)
+
+        T_ini = 20
+        r_len = 1
+
+        controller = Controller(u_d, y_d, T_ini, r_len, R=0.001 * np.eye(1))
+        # Initialize controller
+        while not controller.is_initialized():
+            u = 1
+            y = system.apply(u)
+            controller.update(u, y)
+        r = [10] * r_len
+        # Control
+        for _ in range(2 * T_ini):
+            u = controller.control(r)[0]
+            y = system.apply(u)
+            controller.update(u, y)
+
+        # Test controller
+        u = controller.control(r)[0]
+        y = system.apply(u)
+        self.assertAlmostEqual(y, r[0], delta=0.1)
 
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main(verbosity=2)
