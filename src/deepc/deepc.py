@@ -94,14 +94,14 @@ def deePC(
     # subject to: M_u * u = y - M_x * x
 
     G = M_u.T @ Q @ M_u + R
-    u_star = np.linalg.solve(G, M_u.T @ Q @ (r - M_x @ x))[:, 0]
+    w = M_u.T @ Q @ (r - M_x @ x)
+    u_star = np.linalg.solve(G, w)
 
-    if control_constrain_fkt is None:
-        return u_star.tolist()
-    else:
-        return projected_gradient_method(
-            G, u_star, control_constrain_fkt, max_pgm_iterations, pgm_tolerance
-        ).tolist()
+    if control_constrain_fkt is not None:
+        u_star = projected_gradient_method(
+            G, u_star, w, control_constrain_fkt, max_pgm_iterations, pgm_tolerance
+        )
+    return u_star[:, 0].tolist()
 
 
 class Controller:
@@ -231,13 +231,16 @@ class Controller:
 
         r = np.array(_r).reshape(-1, 1)
         x = np.concatenate([self.u_ini, self.y_ini]).reshape(-1, 1)
-        u_star = np.linalg.solve(self.G, self.M_u.T @ self.Q @ (r - self.M_x @ x))[:, 0]
+        w = self.M_u.T @ self.Q @ (r - self.M_x @ x)
+        u_star = np.linalg.solve(self.G, w)
+
         if self.control_constrain_fkt is not None:
             u_star = projected_gradient_method(
                 self.G,
                 u_star,
+                w,
                 self.control_constrain_fkt,
                 self.max_pgm_iterations,
                 self.pgm_tolerance,
             )
-        return u_star.tolist()
+        return u_star[:, 0].tolist()

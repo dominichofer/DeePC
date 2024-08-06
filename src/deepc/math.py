@@ -30,6 +30,7 @@ def hankel_matrix(rows: int, data: np.ndarray) -> np.ndarray:
 
 def projected_gradient_method(
     mat: np.ndarray,
+    x_ini: np.ndarray,
     target: np.ndarray,
     constrain: Callable,
     max_iterations=300,
@@ -42,7 +43,7 @@ def projected_gradient_method(
         constrain: function that constrains the result
     """
     step_size = 1 / np.linalg.matrix_norm(mat)
-    old = constrain(target)
+    old = constrain(x_ini)
     for _ in range(max_iterations):
         new = constrain(old - step_size * (mat @ old - target))
         if np.linalg.norm(new - old) < tolerance:
