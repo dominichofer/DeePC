@@ -181,7 +181,7 @@ class DeePC:
 
     def append(self, u: np.ndarray, y: np.ndarray) -> None:
         "Appends a control input and an output measurement to the internal state."
-        self.u_ini.append(u) # is this a circular buffer? or keeps growing infinite?
+        self.u_ini.append(u) 
         self.y_ini.append(y)
 
     def clear(self) -> None:
@@ -207,9 +207,6 @@ class DeePC:
         y = r - self.B_x @ x #size m
         u_star = np.linalg.solve(self.G, self.B_u.T @ self.Q @ y) # size n if Bu (mxn)
         
-        #print(u_star)
-        # this returns a 20 by 20 matrix (in my case). but not a series of control inputs 
-
         if self.control_constrain_fkt is None:
             return u_star
         else:
