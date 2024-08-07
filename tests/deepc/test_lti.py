@@ -25,7 +25,7 @@ class TestDescreteLTI(unittest.TestCase):
 
     def test_observable(self):
         system = DescreteLTI(
-            A=[[2, 0], [0, 3]],
+            A=[[1, 1], [0, 1]],
             B=[[1], [0]],
             C=[[1, 0]],
             D=[[0]],
@@ -35,7 +35,7 @@ class TestDescreteLTI(unittest.TestCase):
 
     def test_unobservable(self):
         system = DescreteLTI(
-            A=[[1, 1], [0, 1]],
+            A=[[2, 0], [0, 3]],
             B=[[1], [0]],
             C=[[1, 0]],
             D=[[0]],
@@ -119,10 +119,21 @@ class TestLaggedLTI(unittest.TestCase):
         y = system.apply(4)
         self.assertAlmostEqual(y, 3)
 
+    def test_lag_2(self):
+        system = LaggedLTI(lag=2, x_ini=[1, 2, 3])
+        self.assertTrue(system.is_controllable())
+        self.assertTrue(system.is_observable())
+        self.assertTrue(system.is_stable())
+
+        y = system.apply(4)
+        self.assertAlmostEqual(y, 2)
+        y = system.apply(5)
+        self.assertAlmostEqual(y, 3)
+
     def test_lag_5(self):
         system = LaggedLTI(lag=5, x_ini=[1, 2, 3, 4, 5, 6])
-        # self.assertTrue(system.is_controllable())
-        # self.assertTrue(system.is_observable())
+        self.assertTrue(system.is_controllable())
+        self.assertTrue(system.is_observable())
         self.assertTrue(system.is_stable())
 
         for i in range(10):

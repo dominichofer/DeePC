@@ -39,7 +39,7 @@ class DescreteLTI:
         m = self.B.shape[1]
         Q = np.zeros((n, n * m))
         for i in range(n):
-            Q[:, i * m : (i + 1) * m] = self.A**i @ self.B
+            Q[:, i * m : (i + 1) * m] = np.linalg.matrix_power(self.A, i) @ self.B
         return np.linalg.matrix_rank(Q) == n
 
     def is_observable(self) -> bool:
@@ -52,7 +52,7 @@ class DescreteLTI:
         m = self.B.shape[1]
         Q = np.zeros((n * m, n))
         for i in range(n):
-            Q[i * m : (i + 1) * m, :] = self.C @ self.A**i
+            Q[i * m : (i + 1) * m, :] = self.C @ np.linalg.matrix_power(self.A, i)
         return np.linalg.matrix_rank(Q) == n
 
     def is_stable(self) -> bool:
