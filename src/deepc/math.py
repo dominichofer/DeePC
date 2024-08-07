@@ -43,10 +43,10 @@ def projected_gradient_method(
         constrain: function that constrains the result
     """
     step_size = 1 / np.linalg.matrix_norm(mat)
-    old = constrain(x_ini)
+    x_old = constrain(x_ini)
     for _ in range(max_iterations):
-        new = constrain(old - step_size * (mat @ old - target))
-        if np.linalg.norm(new - old) < tolerance:
-            break
-        old = new
-    return old
+        x_new = constrain(x_old - step_size * (mat @ x_old - target))
+        if np.linalg.norm(x_new - x_old) < tolerance:
+            return x_new
+        x_old = x_new
+    return x_old
