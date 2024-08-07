@@ -1,32 +1,32 @@
 import collections
 from typing import Callable
 import numpy as np
-from .math import left_pseudoinverse, hankel_matrix, projected_gradient_method
+from .math import hankel_matrix, projected_gradient_method
 
 from numpy.linalg import inv
 
 def deePC(
-    u_d: np.ndarray,
-    y_d: np.ndarray,
-    u_ini: np.ndarray,
-    y_ini: np.ndarray,
-    r: np.ndarray,
+    _u_d: list[int | float],
+    _y_d: list[int | float],
+    _u_ini: list[int | float],
+    _y_ini: list[int | float],
+    _r: list[int | float],
     Q: np.ndarray | None = None,
     R: np.ndarray | None = None,
     control_constrain_fkt: Callable | None = None,
     max_pgm_iterations=300,
     pgm_tolerance=1e-6,
-) -> np.ndarray:
+) -> list[int | float]:
     """
     Returns the optimal control for a given system and reference trajectory.
     According to the paper Data-Enabled Predictive Control: In the Shallows of the DeePC
     https://arxiv.org/abs/1811.05890
     Args:
-        u_d: Control inputs from an offline procedure.
-        y_d: Trajectories from an offline procedure.
-        u_ini: Control inputs to initialize the state.
-        y_ini: Trajectories to initialize the state.
-        r: Reference output trajectory.
+        _u_d: Control inputs from an offline procedure.
+        _y_d: Outputs from an offline procedure.
+        _u_ini: Control inputs to initiate the state.
+        _y_ini: Trajectories to initiate the state.
+        _r: Reference trajectory.
         Q: Output cost matrix, defaults to identity matrix.
         R: Control cost matrix, defaults to zero matrix.
         control_constrain_fkt: Function that constrains the control.
@@ -34,8 +34,14 @@ def deePC(
                             used to solve the constrained optimization problem.
         pgm_tolerance: Tolerance for the PGM algorithm.
     """
-    assert len(u_d) == len(y_d), "u_d and y_d must have the same length."
-    assert len(u_ini) == len(y_ini), "u_ini and y_ini must have the same length."
+    assert len(_u_d) == len(_y_d), "u_d and y_d must have the same length."
+    assert len(_u_ini) == len(_y_ini), "u_ini and y_ini must have the same length."
+
+    u_d = np.array(_u_d)
+    y_d = np.array(_y_d)
+    u_ini = np.array(_u_ini)
+    y_ini = np.array(_y_ini)
+    r = np.array(_r)
     T_ini = len(u_ini)
 
     if Q is None:
@@ -56,48 +62,58 @@ def deePC(
 
     # We define
     A = np.block([[U_p], [Y_p], [U_f]])
-    x = np.block([u_ini, y_ini])
+    x = np.concatenate([u_ini, y_ini]).reshape(-1, 1)
     # to get
     # A * g = [x; u]  (1)
     # and
     # Y_f * g = y  (2).
 
-    # We multiply (1) from the left with the left pseudo inverse of A.
+    # We multiply (1) from the left with the pseudo inverse of A.
     # Since pinv(A) * A = I, we get g = pinv(A) * [x; u].
     # Substituting g in (2) gives Y_f * pinv(A) * [x; u] = y.
 
     # We define
-    B = Y_f @ left_pseudoinverse(A)
-    # and get B * [x; u] = y.
+    M = Y_f @ np.linalg.pinv(A)
+    # and get M * [x; u] = y.
 
-    # We define (B_x, B_u) := B such that B_x * x + B_u * u = y.
-    B_x = B[:, : 2 * T_ini]
-    B_u = B[:, 2 * T_ini :]
+    # We define [M_x; M_u] := M
+    M_x = M[:, : 2 * T_ini]
+    M_u = M[:, 2 * T_ini :]
+    # to get M_u_ini * u_ini + M_y_ini * y_ini + M_u * u = y.
+
+    # TODO: Delete this!
+    # B = np.zeros_like(M_u_ini)
+    # B[:, : M_u.shape[1]] = M_u
+    # u_bar = np.linalg.solve(B + M_u_ini, r - M_y_ini @ r[:T_ini])
+    # if not np.allclose(M_u_ini @ u_bar[:T_ini] + M_y_ini @ r[:T_ini] + M_u @ u_bar, r):
+    #     raise ValueError("The solution is not correct.")
 
     # We can now solve the unconstrained problem.
     # This is a ridge regression problem with generalized Tikhonov regularization.
     # https://en.wikipedia.org/wiki/Ridge_regression#Generalized_Tikhonov_regularization
     # minimize: ||y - r||_Q^2 + ||u||_R^2
-    # subject to: B_u * u = y - B_x * x
+    # subject to: M_u * u = y - M_x * x
 
-    G = B_u.T @ Q @ B_u + R
-    u_star = np.linalg.solve(G, B_u.T @ Q @ (r - B_x @ x).T)
+    G = M_u.T @ Q @ M_u + R
+    w = M_u.T @ Q @ (r - M_x @ x)
+    u_star = np.linalg.solve(G, w)
 
-    if control_constrain_fkt is None:
-        return u_star
-    else:
-        return projected_gradient_method(
-            G, u_star, control_constrain_fkt, max_pgm_iterations, pgm_tolerance
+    if control_constrain_fkt is not None:
+        u_star = projected_gradient_method(
+            G, u_star, w, control_constrain_fkt, max_pgm_iterations, pgm_tolerance
         )
+    return u_star[:, 0].tolist()
 
 
-class DeePC:
+class Controller:
     def __init__(
         self,
-        u_d: np.ndarray,
-        y_d: np.ndarray,
-        T_ini: int,# carefull, different from the other function
-        r_len: int,# carefull, different from the other function
+        _u_d: list[int | float],
+        _y_d: list[int | float],
+        T_ini: int,
+        r_len: int,
+        u_ini: list[int | float] | None = None,
+        y_ini: list[int | float] | None = None,
         Q: np.ndarray | None = None,
         R: np.ndarray | None = None,
         control_constrain_fkt: Callable | None = None,
@@ -121,14 +137,31 @@ class DeePC:
                                 used to solve the constrained optimization problem.
             pgm_tolerance: Tolerance for the PGM algorithm.
         """
+        u_d = np.array(_u_d)
+        y_d = np.array(_y_d)
+
         assert len(u_d) == len(y_d), "u_d and y_d must have the same length."
         assert T_ini > 0, "T_ini must be greater than zero."
-        self.u_ini: collections.deque[np.ndarray] = collections.deque(maxlen=T_ini)
-        self.y_ini: collections.deque[np.ndarray] = collections.deque(maxlen=T_ini)
+        assert (u_ini is None) == (y_ini is None), "u_ini and y_ini must be both None or not None."
+        assert u_ini is None or len(u_ini) == T_ini, "u_ini must have the same length as T_ini."
+        assert y_ini is None or len(y_ini) == T_ini, "y_ini must have the same length as T_ini."
+
         self.T_ini = T_ini
         self.r_len = r_len
-        self.Q = Q if Q is not None else np.eye(r_len) #problems with truth of np.array with more than one value
-        self.R = R if R is not None else np.zeros((r_len, r_len))
+        self.u_ini: collections.deque[np.ndarray] = collections.deque(maxlen=T_ini)
+        if u_ini is not None:
+            for u in u_ini:
+                self.u_ini.append(np.array(u))
+        self.y_ini: collections.deque[np.ndarray] = collections.deque(maxlen=T_ini)
+        if y_ini is not None:
+            for y in y_ini:
+                self.y_ini.append(np.array(y))
+        if Q is None:
+            Q = np.eye(r_len)
+        if R is None:
+            R = np.zeros((r_len, r_len))
+        self.Q = Q
+        self.R = R
         self.control_constrain_fkt = control_constrain_fkt
         self.max_pgm_iterations = max_pgm_iterations
         self.pgm_tolerance = pgm_tolerance
@@ -152,68 +185,63 @@ class DeePC:
         # and
         # Y_f * g = y  (2).
 
-        # We multiply (1) from the left with the left pseudo inverse of A.
+        # We multiply (1) from the left with the pseudo inverse of A.
         # Since pinv(A) * A = I, we get g = pinv(A) * [x; u].
         # Substituting g in (2) gives Y_f * pinv(A) * [x; u] = y.
 
         # We define
-        #todo B is inconsistent with my code
-        B = Y_f @ (A.T@inv( A@A.T )) #Mbar
-        # and get B * [x; u] = y.
+        M = Y_f @ np.linalg.pinv(A)
+        # and get M * [x; u] = y.
 
-        # We define (B_x, B_u) := B such that B_x * x + B_u * u = y.
-        self.B_x = B[:, : 2 * T_ini]
-        self.B_u = B[:, 2 * T_ini :]
+        # We define (M_x, M_u) := M such that M_x * x + M_u * u = y.
+        self.M_x = M[:, : 2 * T_ini]
+        self.M_u = M[:, 2 * T_ini :]
 
         # We can now solve the unconstrained problem.
         # This is a ridge regression problem with generalized Tikhonov regularization.
         # https://en.wikipedia.org/wiki/Ridge_regression#Generalized_Tikhonov_regularization
         # minimize: ||y - r||_Q^2 + ||u||_R^2
-        # subject to: B_u * u = y - B_x * x
-        # This has an explicit solution u_star = (B_u^T * Q * B_u + R)^-1 * (B_u^T * Q * y).
+        # subject to: M_u * u = y - M_x * x
+        # This has an explicit solution u_star = (M_u^T * Q * M_u + R)^-1 * (M_u^T * Q * y).
 
-        # We precompute the matrix G = B_u^T * Q * B_u + R.
-        self.G = self.B_u.T @ self.Q @ self.B_u + self.R
+        # We precompute the matrix G = M_u^T * Q * M_u + R.
+        self.G = self.M_u.T @ self.Q @ self.M_u + self.R
 
     def is_initialized(self) -> bool:
         "Returns whether the internal state is initialized."
         return len(self.u_ini) == self.T_ini and len(self.y_ini) == self.T_ini
 
-    def append(self, u: np.ndarray, y: np.ndarray) -> None:
-        "Appends a control input and an output measurement to the internal state."
-        self.u_ini.append(u) 
-        self.y_ini.append(y)
+    def update(self, u: list[int | float], y: list[int | float]) -> None:
+        "Updates the internal state with the given control input and trajectory."
+        self.u_ini.append(np.array(u))
+        self.y_ini.append(np.array(y))
 
     def clear(self) -> None:
         "Clears the internal state."
         self.u_ini.clear()
         self.y_ini.clear()
 
-    def control(self, r: np.ndarray) -> np.ndarray:
+    def control(self, _r: list[int | float]) -> list[int | float]:
         """
         Returns the optimal control for a given reference trajectory.
         Args:
             r: Reference trajectory.
         """
         assert self.is_initialized(), "Internal state is not initialized."
-        assert len(r) == self.r_len, "Reference trajectory has wrong length."
+        assert len(_r) == self.r_len, "Reference trajectory has wrong length."
 
-        ## to add assert the datatype. had a nasty bug beacause the inital u_ini was int and the others were np array
-        #u_ini = np.array([np.array(x) for x in self.u_ini])
-        #y_ini = np.array([np.array(x) for x in self.y_ini])
+        r = np.array(_r).reshape(-1, 1)
+        x = np.concatenate([self.u_ini, self.y_ini]).reshape(-1, 1)
+        w = self.M_u.T @ self.Q @ (r - self.M_x @ x)
+        u_star = np.linalg.solve(self.G, w)
 
-        #x = np.block([self.u_ini, self.y_ini])
-        x = np.concatenate([self.u_ini, self.y_ini]).reshape(-1, 1)  # Reshape x to be a column vector
-        y = r - self.B_x @ x #size m
-        u_star = np.linalg.solve(self.G, self.B_u.T @ self.Q @ y) # size n if Bu (mxn)
-        
-        if self.control_constrain_fkt is None:
-            return u_star
-        else:
-            return projected_gradient_method(
+        if self.control_constrain_fkt is not None:
+            u_star = projected_gradient_method(
                 self.G,
                 u_star,
+                w,
                 self.control_constrain_fkt,
                 self.max_pgm_iterations,
                 self.pgm_tolerance,
             )
+        return u_star[:, 0].tolist()

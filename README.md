@@ -8,30 +8,30 @@ It requires at least Python 3.10, and the libraries listed in pyproject.toml.
 Run `pip install .` to install the package and all its dependencies.
 
 ## Usage
-It provides a reference implementation of the DeePC algorithm using numpy
+It provides a reference implementation of the DeePC algorithm
 ```python
 def deePC(
-    u_d: np.ndarray,
-    y_d: np.ndarray,
-    u_ini: np.ndarray,
-    y_ini: np.ndarray,
-    r: np.ndarray,
+    _u_d: list[int | float],
+    _y_d: list[int | float],
+    _u_ini: list[int | float],
+    _y_ini: list[int | float],
+    _r: list[int | float],
     Q: np.ndarray | None = None,
     R: np.ndarray | None = None,
     control_constrain_fkt: Callable | None = None,
     max_pgm_iterations=300,
     pgm_tolerance=1e-6,
-) -> np.ndarray:
+) -> list[int | float]:
     """
     Returns the optimal control for a given system and reference trajectory.
     According to the paper Data-Enabled Predictive Control: In the Shallows of the DeePC
     https://arxiv.org/abs/1811.05890
     Args:
-        u_d: Control inputs from an offline procedure.
-        y_d: Trajectories from an offline procedure.
-        u_ini: Control inputs to initialize the state.
-        y_ini: Trajectories to initialize the state.
-        r: Reference output trajectory.
+        _u_d: Control inputs from an offline procedure.
+        _y_d: Outputs from an offline procedure.
+        _u_ini: Control inputs to initiate the state.
+        _y_ini: Trajectories to initiate the state.
+        _r: Reference trajectory.
         Q: Output cost matrix, defaults to identity matrix.
         R: Control cost matrix, defaults to zero matrix. (todo change to eps*identity?)
         control_constrain_fkt: Function that constrains the control.
@@ -43,10 +43,10 @@ def deePC(
 
 It implements a controller
 ```python
-class DeePC:
+class Controller:
     is_initialized() -> bool
-    append(u, y)
+    update(u, y)
     clear()
-    control(r) -> np.ndarray
+    control(r) -> list[int | float]
 ```
-which stores the last `T_ini` values provided via `append(u, y)` and returns the optimal control for a given reference trajectory via `control(r)` once enough data has been appended. This can be probed with `is_initialized()`.
+which stores the last `T_ini` values provided via `update(u, y)` and returns the optimal control for a given reference trajectory via `control(r)` if enough data has been provided. This can be checked with `is_initialized()`.
