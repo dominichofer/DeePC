@@ -48,7 +48,7 @@ def projected_gradient_method(
     Returns:
         The constrained optimal control vector
     """
-    step_size = 1 / np.linalg.matrix_norm(mat)
+    step_size = 1 / np.linalg.norm(mat)
     old = constrain(x_ini)
     for _ in range(max_iterations):
         new = constrain(old - step_size * (mat @ old - target))

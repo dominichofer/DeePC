@@ -29,9 +29,9 @@ def deePC(
     Args:
         _u_d: Control inputs from an offline procedure.
         _y_d: Outputs from an offline procedure.
-        _u_ini: Control inputs to initiate the state.
-        _y_ini: Trajectories to initiate the state.
-        _r: Reference trajectory.
+        _u_ini: Control inputs to initialize the state.
+        _y_ini: Trajectories to initialize the state.
+        _r: Reference output trajectory.
         Q: Output cost matrix, defaults to identity matrix.
         R: Control cost matrix, defaults to zero matrix. (todo change to eps*identity?)
         control_constrain_fkt: Function that constrains the control.
