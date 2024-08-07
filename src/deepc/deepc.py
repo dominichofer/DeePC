@@ -3,6 +3,7 @@ from typing import Callable
 import numpy as np
 from .math import hankel_matrix, projected_gradient_method
 
+from numpy.linalg import inv
 
 def deePC(
     _u_d: list[int | float],
@@ -126,8 +127,8 @@ class Controller:
         Holds the last T_ini control inputs and trajectories to initiate the state.
         Args:
             u_d: Control inputs from an offline procedure.
-            y_d: Trajectories from an offline procedure.
-            T_ini: Number of initial control inputs and trajectories.
+            y_d: Outputs from an offline procedure.
+            T_ini: Number of initial control inputs and outputs / trajectories.
             r_len: Length of the reference trajectory.
             Q: Output cost matrix, defaults to identity matrix.
             R: Control cost matrix, defaults to zero matrix.
@@ -177,7 +178,7 @@ class Controller:
         # subject to: [U_p; Y_p; U_f; Y_f] * g = [u_ini; y_ini; u; y]
 
         # We define
-        A = np.block([[U_p], [Y_p], [U_f]])
+        A = np.block([[U_p], [Y_p], [U_f]]) #M
         # x = [u_ini; y_ini]
         # to get
         # A * g = [x; u]  (1)

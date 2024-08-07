@@ -33,7 +33,7 @@ def deePC(
         _y_ini: Trajectories to initiate the state.
         _r: Reference trajectory.
         Q: Output cost matrix, defaults to identity matrix.
-        R: Control cost matrix, defaults to zero matrix.
+        R: Control cost matrix, defaults to zero matrix. (todo change to eps*identity?)
         control_constrain_fkt: Function that constrains the control.
         max_pgm_iterations: Maximum number of iterations of the projected gradient method (PGM)
                             used to solve the constrained optimization problem.

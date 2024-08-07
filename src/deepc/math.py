@@ -28,6 +28,7 @@ def hankel_matrix(rows: int, data: np.ndarray) -> np.ndarray:
     return np.array([data[i : i + cols] for i in range(rows)])
 
 
+
 def projected_gradient_method(
     mat: np.ndarray,
     x_ini: np.ndarray,
@@ -39,8 +40,13 @@ def projected_gradient_method(
     """
     Projected Gradient Method
     Args:
-        target: target vector
-        constrain: function that constrains the result
+        mat: Matrix used in the gradient step
+        target: Target vector
+        constrain: Function that constrains the result
+        max_iterations: Maximum number of iterations
+        tolerance: Tolerance for convergence
+    Returns:
+        The constrained optimal control vector
     """
     step_size = 1 / np.linalg.matrix_norm(mat)
     old = constrain(x_ini)
