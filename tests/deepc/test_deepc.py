@@ -1,10 +1,10 @@
 import unittest
-import math
 import numpy as np
-from deepc import clamp, deePC, Controller, DiscreteLTI, LaggedLTI
+from deepc import clamp, linear_chirp, deePC, Controller, DiscreteLTI, LaggedLTI
 
 
-def lti_2D() -> DiscreteLTI:
+def lti_1D_to_1D() -> DiscreteLTI:
+    "LTI system with 1D input and 1D output"
     system = DiscreteLTI(
         A=[[0.9, -0.2], [0.7, 0.1]],
         B=[[0.1], [0]],
@@ -18,9 +18,23 @@ def lti_2D() -> DiscreteLTI:
     return system
 
 
+def lti_3D_to_3D() -> DiscreteLTI:
+    "LTI system with 3D input and 3D output"
+    system = DiscreteLTI(
+        A=[[0.5, 0.1, 0], [0.1, 0.5, 0.1], [0, 0.1, 0.5]],
+        B=[[0.1, 0, 0], [0, 0.1, 0], [0, 0, 0.1]],
+        C=[[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+        D=[[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+        x_ini=[0, 0, 0],
+    )
+    assert system.is_controllable()
+    assert system.is_observable()
+    assert system.is_stable()
+    return system
+
+
 def gather_offline_data(system: DiscreteLTI) -> tuple:
-    # Gather offline data
-    u_d = [i * math.sin(i * i / 100) for i in range(500)]
+    u_d = linear_chirp(0, 500, 1000)
     y_d = system.apply_multiple(u_d)
     return u_d, y_d
 
@@ -60,7 +74,7 @@ class TestDeePC(unittest.TestCase):
         np.testing.assert_array_almost_equal(y_star, r)
 
     def test_unconstrained_2D_LTI(self):
-        system = lti_2D()
+        system = lti_1D_to_1D()
 
         # Offline data
         u_d, y_d = gather_offline_data(system)
@@ -78,7 +92,7 @@ class TestDeePC(unittest.TestCase):
         self.assertAlmostEqual(y_star[0], r[0])
 
     def test_constrained_2D_LTI(self):
-        system = lti_2D()
+        system = lti_1D_to_1D()
 
         # Offline data
         u_d, y_d = gather_offline_data(system)
@@ -98,7 +112,7 @@ class TestDeePC(unittest.TestCase):
 
 class TestController(unittest.TestCase):
     def test_unconstrained_2D_LTI(self):
-        system = lti_2D()
+        system = lti_1D_to_1D()
         u_d, y_d = gather_offline_data(system)
         T_ini = 20
         r_len = 3
@@ -111,7 +125,7 @@ class TestController(unittest.TestCase):
         self.assertAlmostEqual(y, r[0])
 
     def test_constrained_2D_LTI(self):
-        system = lti_2D()
+        system = lti_1D_to_1D()
         u_d, y_d = gather_offline_data(system)
         T_ini = 20
         r_len = 1

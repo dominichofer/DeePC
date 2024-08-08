@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from deepc.math import clamp, left_pseudoinverse, right_pseudoinverse, hankel_matrix
+from deepc.math import clamp, linear_chirp, left_pseudoinverse, right_pseudoinverse, hankel_matrix
 
 
 class TestClamp(unittest.TestCase):
@@ -68,6 +68,25 @@ class TestHankelMatrix(unittest.TestCase):
         vec = np.array([1, 2, 3, 4])
         expected = np.matrix([[1, 2, 3], [2, 3, 4]])
         np.testing.assert_array_equal(hankel_matrix(2, vec), expected)
+
+
+class TestLinearChirp(unittest.TestCase):
+    def test_len(self):
+        signal = linear_chirp(100, 0, 1000)
+        self.assertEqual(len(signal), 1000)
+
+    def test_start(self):
+        signal = linear_chirp(100, 0, 1000)
+        self.assertAlmostEqual(signal[0], 0)
+
+    def test_end(self):
+        signal = linear_chirp(100, 0, 1000)
+        self.assertAlmostEqual(signal[-1], 0)
+
+    def test_symmetry(self):
+        signal1 = linear_chirp(100, 0, 1000)
+        signal2 = [-x for x in reversed(linear_chirp(0, 100, 1000))]
+        np.testing.assert_allclose(signal1, signal2, atol=1e-12)
 
 
 if __name__ == "__main__":
