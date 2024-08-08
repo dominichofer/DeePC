@@ -24,7 +24,7 @@ def deePC(
         _u_d: Control inputs from an offline procedure.
         _y_d: Outputs from an offline procedure.
         _u_ini: Control inputs to initiate the state.
-        _y_ini: Trajectories to initiate the state.
+        _y_ini: Outputs to initiate the state.
         _r: Reference trajectory.
         Q: Output cost matrix, defaults to identity matrix.
         R: Control cost matrix, defaults to zero matrix.
@@ -126,7 +126,7 @@ class Controller:
         Holds the last T_ini control inputs and trajectories to initiate the state.
         Args:
             u_d: Control inputs from an offline procedure.
-            y_d: Trajectories from an offline procedure.
+            y_d: Outputs from an offline procedure.
             T_ini: Number of initial control inputs and trajectories.
             r_len: Length of the reference trajectory.
             Q: Output cost matrix, defaults to identity matrix.
