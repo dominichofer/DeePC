@@ -1,10 +1,10 @@
 import unittest
-from deepc.lti import DescreteLTI, LaggedLTI
+from deepc.lti import DiscreteLTI, LaggedLTI
 
 
-class TestDescreteLTI(unittest.TestCase):
+class TestDiscreteLTI(unittest.TestCase):
     def test_controllable(self):
-        system = DescreteLTI(
+        system = DiscreteLTI(
             A=[[2, 0], [0, 3]],
             B=[[1], [1]],
             C=[[1, 0]],
@@ -14,7 +14,7 @@ class TestDescreteLTI(unittest.TestCase):
         self.assertTrue(system.is_controllable())
 
     def test_uncontrollable(self):
-        system = DescreteLTI(
+        system = DiscreteLTI(
             A=[[2, 0], [0, 3]],
             B=[[0], [0]],
             C=[[1, 0]],
@@ -24,7 +24,7 @@ class TestDescreteLTI(unittest.TestCase):
         self.assertFalse(system.is_controllable())
 
     def test_observable(self):
-        system = DescreteLTI(
+        system = DiscreteLTI(
             A=[[1, 1], [0, 1]],
             B=[[1], [0]],
             C=[[1, 0]],
@@ -34,7 +34,7 @@ class TestDescreteLTI(unittest.TestCase):
         self.assertTrue(system.is_observable())
 
     def test_unobservable(self):
-        system = DescreteLTI(
+        system = DiscreteLTI(
             A=[[2, 0], [0, 3]],
             B=[[1], [0]],
             C=[[1, 0]],
@@ -44,7 +44,7 @@ class TestDescreteLTI(unittest.TestCase):
         self.assertFalse(system.is_observable())
 
     def test_stable(self):
-        system = DescreteLTI(
+        system = DiscreteLTI(
             A=[[0.5, 0], [0.6, 0]],
             B=[[1], [1]],
             C=[[1, 0]],
@@ -54,7 +54,7 @@ class TestDescreteLTI(unittest.TestCase):
         self.assertTrue(system.is_stable())
 
     def test_unstable(self):
-        system = DescreteLTI(
+        system = DiscreteLTI(
             A=[[2, 0], [0, 3]],
             B=[[1], [1]],
             C=[[1, 0]],
@@ -64,7 +64,7 @@ class TestDescreteLTI(unittest.TestCase):
         self.assertFalse(system.is_stable())
 
     def test_apply_one(self):
-        system = DescreteLTI(
+        system = DiscreteLTI(
             A=[[0.5, 0], [0.6, 0.1]],
             B=[[0.1], [1]],
             C=[[1, 0]],
@@ -75,7 +75,7 @@ class TestDescreteLTI(unittest.TestCase):
         self.assertAlmostEqual(y, 1.1)
 
     def test_apply_multiple(self):
-        system = DescreteLTI(
+        system = DiscreteLTI(
             A=[[0.5, 0], [0.6, 0.1]],
             B=[[0.1], [1]],
             C=[[1, 0]],
@@ -87,7 +87,7 @@ class TestDescreteLTI(unittest.TestCase):
         self.assertAlmostEqual(y, expected)
 
     def test_apply_control_2d(self):
-        system = DescreteLTI(
+        system = DiscreteLTI(
             A=[[0.5, 0], [0.6, 0.1]],
             B=[[1, 0.1], [0.1, 1]],
             C=[[1, 0]],

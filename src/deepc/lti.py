@@ -1,8 +1,8 @@
 import numpy as np
 
 
-class DescreteLTI:
-    "Descrete Linear Time-Invariant System"
+class DiscreteLTI:
+    "Discrete Linear Time-Invariant System"
 
     def __init__(self, A: list, B: list, C: list, D: list, x_ini: list) -> None:
         """
@@ -82,8 +82,8 @@ class DescreteLTI:
         return [self.apply(u_i) for u_i in u]
 
 
-class LaggedLTI(DescreteLTI):
-    "Lagged Descrete Linear Time-Invariant System"
+class LaggedLTI(DiscreteLTI):
+    "Lagged Discrete Linear Time-Invariant System"
 
     def __init__(self, lag: int, x_ini: list) -> None:
         "x_ini: Initial state"
