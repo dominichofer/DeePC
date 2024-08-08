@@ -1,8 +1,12 @@
 # DeePC	
 
 ## Description
-This is a Python library that implements DeePC from the paper "Data-Enabled Predictive Control: In the Shallows of the DeePC" [https://arxiv.org/pdf/1811.05890](https://arxiv.org/pdf/1811.05890).
-It requires at least Python 3.10, and the libraries listed in pyproject.toml.
+This is a Python library that implements DeePC from the paper<br>
+<i>Data-Enabled Predictive Control: In the Shallows of the DeePC</i><br>
+[https://arxiv.org/pdf/1811.05890](https://arxiv.org/pdf/1811.05890)
+
+## Requirements
+At least Python 3.10 and numpy.
 
 ## Installation
 Run `pip install .` to install the package and all its dependencies.
@@ -49,5 +53,5 @@ class Controller:
     clear()
     apply(r) -> list[int | float]
 ```
-which stores the last `T_ini` values provided via `update(u, y)` and returns the optimal control for a given reference trajectory via `apply(r)` if enough data has been provided. This can be checked with `is_initialized()`.
+which stores the last `T_ini` values provided via `update(u, y)` and returns the optimal control for a given reference trajectory via `apply(r)` if enough data has been provided. This can be checked with `is_initialized()`.<br>
 For a reference application of the controller see `examples.ipynb`.
