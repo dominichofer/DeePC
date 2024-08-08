@@ -3,6 +3,28 @@ from deepc.lti import DiscreteLTI, LaggedLTI
 
 
 class TestDiscreteLTI(unittest.TestCase):
+    def test_dimensions_1D(self):
+        system = DiscreteLTI(
+            A=[[2, 0], [0, 3]],
+            B=[[1], [1]],
+            C=[[1, 0]],
+            D=[[0]],
+            x_ini=[0, 0],
+        )
+        self.assertEqual(system.input_dim, 1)
+        self.assertEqual(system.output_dim, 1)
+
+    def test_dimensions_2D(self):
+        system = DiscreteLTI(
+            A=[[2, 0], [0, 3]],
+            B=[[1, 0], [0, 1]],
+            C=[[1, 0], [0, 1]],
+            D=[[0, 0], [0, 0]],
+            x_ini=[0, 0],
+        )
+        self.assertEqual(system.input_dim, 2)
+        self.assertEqual(system.output_dim, 2)
+
     def test_controllable(self):
         system = DiscreteLTI(
             A=[[2, 0], [0, 3]],

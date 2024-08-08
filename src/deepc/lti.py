@@ -24,6 +24,16 @@ class DiscreteLTI:
         assert self.C.shape[0] == self.D.shape[0]
         assert self.C.shape[1] == self.x.shape[0]
 
+    @property
+    def input_dim(self) -> int:
+        "Get the input dimension"
+        return self.B.shape[1]
+
+    @property
+    def output_dim(self) -> int:
+        "Get the output dimension"
+        return self.C.shape[0]
+
     def set_state(self, x: list) -> None:
         "Set the state of the system"
         assert len(x) == self.x.shape[0]

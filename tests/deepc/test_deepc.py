@@ -109,6 +109,24 @@ class TestDeePC(unittest.TestCase):
         y_star = system.apply_multiple(u_star)
         self.assertAlmostEqual(y_star[0], r[0])
 
+    def test_constrained_LTI_3D_to_3D(self):
+        system = lti_3D_to_3D()
+
+        # Offline data
+        u_d, y_d = gather_offline_data(system)
+
+        # Initial conditions
+        u_ini = [1] * 20
+        y_ini = system.apply_multiple(u_ini)
+
+        # Reference trajectory
+        r = [3, 3]
+
+        u_star = deePC(u_d, y_d, u_ini, y_ini, r)
+
+        y_star = system.apply_multiple(u_star)
+        self.assertAlmostEqual(y_star[0], r[0])
+
 
 class TestController(unittest.TestCase):
     def test_unconstrained_2D_LTI(self):
