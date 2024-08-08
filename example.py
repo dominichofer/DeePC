@@ -30,14 +30,14 @@ y_d = system.apply_multiple(u_d)
 
 # Define how many steps the controller should look back
 # to grasp the current state of the system
-T_ini = 10
+T_ini = 15
 
 # Define how many steps the controller should look forward
-r_len = 10
+r_len = 7
 
 # Define the controller
 constraint = lambda u: clamp(u, 0, 5)
-controller = Controller(u_d, y_d, T_ini, r_len, control_constrain_fkt=constraint)
+controller = Controller(u_d, y_d, T_ini, r_len, control_constrain_fkt=constraint)#
 
 # Reset the system
 # to sepereate the offline data from the online data

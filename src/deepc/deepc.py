@@ -157,18 +157,21 @@ class Controller:
             for y in y_ini:
                 self.y_ini.append(np.array(y))
         if Q is None:
+            #Q = np.eye(r_len)
             Q = np.eye(r_len)
         if R is None:
-            R = np.zeros((r_len, r_len))
+            R = np.zeros((r_len, r_len)) # todo problems with R
         self.Q = Q
         self.R = R
         self.control_constrain_fkt = control_constrain_fkt
         self.max_pgm_iterations = max_pgm_iterations
         self.pgm_tolerance = pgm_tolerance
 
+        # todo dirty fix
+        self.N = 1000
         U = hankel_matrix(T_ini + r_len, u_d)
         U_p = U[:T_ini, :]  # past
-        U_f = U[T_ini:, :]  # future
+        U_f = U[T_ini:T_ini+self.N, :]  # future
         Y = hankel_matrix(T_ini + r_len, y_d)
         Y_p = Y[:T_ini, :]  # past
         Y_f = Y[T_ini:, :]  # future
@@ -177,6 +180,8 @@ class Controller:
         # minimize: ||y - r||_Q^2 + ||u||_R^2
         # subject to: [U_p; Y_p; U_f; Y_f] * g = [u_ini; y_ini; u; y]
 
+        #M = np.block([[self.H_u[:self.Tini,:]],[self.H_y[:self.Tini,:]],[self.H_u[self.Tini:self.Tini+self.N,:]]])
+        
         # We define
         A = np.block([[U_p], [Y_p], [U_f]]) #M
         # x = [u_ini; y_ini]
@@ -194,7 +199,7 @@ class Controller:
         # and get M * [x; u] = y.
 
         # We define (M_x, M_u) := M such that M_x * x + M_u * u = y.
-        self.M_x = M[:, : 2 * T_ini]
+        self.M_x = M[:, : 2 * r_len]
         self.M_u = M[:, 2 * T_ini :]
 
         # We can now solve the unconstrained problem.
@@ -203,9 +208,23 @@ class Controller:
         # minimize: ||y - r||_Q^2 + ||u||_R^2
         # subject to: M_u * u = y - M_x * x
         # This has an explicit solution u_star = (M_u^T * Q * M_u + R)^-1 * (M_u^T * Q * y).
+        # Print shapes to debug the dimension mismatch
+        print(f"M_u shape: {self.M_u.shape}")
+        print(f"Q shape: {self.Q.shape}")
+        print(f"R shape: {self.R.shape}")
+        print("T_ini", T_ini)
+        print("len r ", r_len)
+        print("U p ", U_p.__len__())
+        print("U f ", U_f.__len__())
+
+        # Reconstructing M_u to align with Q and R
+        #M_u_corrected = self.M_u.reshape((self.T_ini + self.r_len, -1))
+
+        # Now M_u_corrected should have dimensions that match with Q and R
+        #print(f"M_u_corrected shape: {M_u_corrected.shape}")  # Expected to be compatible
 
         # We precompute the matrix G = M_u^T * Q * M_u + R.
-        self.G = self.M_u.T @ self.Q @ self.M_u + self.R
+        self.G = self.M_u.T @ self.Q @ self.M_u #+ self.R
 
     def is_initialized(self) -> bool:
         "Returns whether the internal state is initialized."
@@ -231,7 +250,18 @@ class Controller:
         assert len(_r) == self.r_len, "Reference trajectory has wrong length."
 
         r = np.array(_r).reshape(-1, 1)
-        x = np.concatenate([self.u_ini, self.y_ini]).reshape(-1, 1)
+        x = np.hstack((self.u_ini,self.y_ini))[:,None]
+        #x = np.concatenate([self.u_ini, self.y_ini]).reshape(-1, 1)
+        
+        # Debugging output
+        print(f"self.M_u shape: {self.M_u.shape}")
+        print(f"self.M_u.T shape: {self.M_u.T.shape}")
+        print(f"self.Q shape: {self.Q.shape}")
+        print(f"self.M_x shape: {self.M_x.shape}")
+        print(f"x shape: {x.shape}")
+        print(f"r shape: {r.shape}")
+        print(f"r - self.M_x @ x shape: {(r - self.M_x @ x).shape}")
+
         w = self.M_u.T @ self.Q @ (r - self.M_x @ x)
         u_star = np.linalg.solve(self.G, w)
 

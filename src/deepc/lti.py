@@ -67,7 +67,9 @@ class DescreteLTI:
             _u = np.array(u)
         if isinstance(u, (int, float)):
             _u = np.array([u])
-
+        elif isinstance(u, np.ndarray):
+            _u = u
+    
         assert _u.shape[0] == self.B.shape[1]
 
         self.x = self.A @ self.x + self.B @ _u
