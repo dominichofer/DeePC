@@ -220,7 +220,7 @@ class Controller:
         self.u_ini.clear()
         self.y_ini.clear()
 
-    def control(self, _r: list[int | float]) -> list[int | float]:
+    def apply(self, _r: list[int | float]) -> list[int | float]:
         """
         Returns the optimal control for a given reference trajectory.
         Args:

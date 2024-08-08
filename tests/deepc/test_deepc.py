@@ -33,7 +33,7 @@ def warm_up_controller(controller: Controller, system: DiscreteLTI, u: float) ->
 
 def control_system(controller: Controller, system: DiscreteLTI, r: list, time_steps: int) -> float:
     for _ in range(time_steps):
-        u = controller.control(r)[0]
+        u = controller.apply(r)[0]
         y = system.apply(u)
         controller.update(u, y)
     return y

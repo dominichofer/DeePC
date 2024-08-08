@@ -8,7 +8,7 @@ It requires at least Python 3.10, and the libraries listed in pyproject.toml.
 Run `pip install .` to install the package and all its dependencies.
 
 ## Usage
-It provides a reference implementation of the DeePC algorithm
+It provides an implementation of the DeePC algorithm
 ```python
 def deePC(
     _u_d: list[int | float],
@@ -47,6 +47,7 @@ class Controller:
     is_initialized() -> bool
     update(u, y)
     clear()
-    control(r) -> list[int | float]
+    apply(r) -> list[int | float]
 ```
-which stores the last `T_ini` values provided via `update(u, y)` and returns the optimal control for a given reference trajectory via `control(r)` if enough data has been provided. This can be checked with `is_initialized()`.
+which stores the last `T_ini` values provided via `update(u, y)` and returns the optimal control for a given reference trajectory via `apply(r)` if enough data has been provided. This can be checked with `is_initialized()`.
+For a reference application of the controller see `examples.ipynb`.
