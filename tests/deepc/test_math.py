@@ -48,26 +48,50 @@ class TestRightPseudoinverse(unittest.TestCase):
         np.testing.assert_array_almost_equal(i, np.eye(2))
 
 
-class TestHankelMatrix(unittest.TestCase):
-    def test_size_1_1_row(self):
-        vec = np.array([1])
-        expected = np.matrix([[1]])
-        np.testing.assert_array_equal(hankel_matrix(1, vec), expected)
+class TestHankelMatrix_1D_data(unittest.TestCase):
+    def test_size_1_and_1_row(self):
+        np.testing.assert_array_equal(hankel_matrix(1, [1]), [[1]])
 
-    def test_size_2_1_row(self):
-        vec = np.array([1, 2])
-        expected = np.matrix([[1, 2]])
-        np.testing.assert_array_equal(hankel_matrix(1, vec), expected)
+    def test_size_2_and_1_row(self):
+        np.testing.assert_array_equal(hankel_matrix(1, [1, 2]), [[1, 2]])
 
-    def test_size_3_2_rows(self):
-        vec = np.array([1, 2, 3])
-        expected = np.matrix([[1, 2], [2, 3]])
-        np.testing.assert_array_equal(hankel_matrix(2, vec), expected)
+    def test_size_2_and_2_row(self):
+        np.testing.assert_array_equal(hankel_matrix(2, [1, 2]), [[1], [2]])
 
-    def test_size_4_2_rows(self):
-        vec = np.array([1, 2, 3, 4])
-        expected = np.matrix([[1, 2, 3], [2, 3, 4]])
-        np.testing.assert_array_equal(hankel_matrix(2, vec), expected)
+    def test_size_3_and_1_rows(self):
+        np.testing.assert_array_equal(hankel_matrix(1, [1, 2, 3]), [[1, 2, 3]])
+
+    def test_size_3_and_2_rows(self):
+        np.testing.assert_array_equal(hankel_matrix(2, [1, 2, 3]), [[1, 2], [2, 3]])
+
+    def test_size_3_and_3_rows(self):
+        np.testing.assert_array_equal(hankel_matrix(3, [1, 2, 3]), [[1], [2], [3]])
+
+
+class TestHankelMatrix_2D_data(unittest.TestCase):
+    def test_size_1_and_1_row(self):
+        np.testing.assert_array_equal(hankel_matrix(1, [(1, 2)]), [[1], [2]])
+
+    def test_size_2_and_1_row(self):
+        np.testing.assert_array_equal(hankel_matrix(1, [(1, 2), (3, 4)]), [[1, 3], [2, 4]])
+
+    def test_size_2_and_2_row(self):
+        np.testing.assert_array_equal(hankel_matrix(2, [(1, 2), (3, 4)]), [[1], [2], [3], [4]])
+
+    def test_size_3_and_1_rows(self):
+        np.testing.assert_array_equal(
+            hankel_matrix(1, [(1, 2), (3, 4), (5, 6)]), [[1, 3, 5], [2, 4, 6]]
+        )
+
+    def test_size_3_and_2_rows(self):
+        np.testing.assert_array_equal(
+            hankel_matrix(2, [(1, 2), (3, 4), (5, 6)]), [[1, 3], [2, 4], [3, 5], [4, 6]]
+        )
+
+    def test_size_3_and_3_rows(self):
+        np.testing.assert_array_equal(
+            hankel_matrix(3, [(1, 2), (3, 4), (5, 6)]), [[1], [2], [3], [4], [5], [6]]
+        )
 
 
 class TestLinearChirp(unittest.TestCase):

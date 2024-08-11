@@ -17,16 +17,23 @@ def right_pseudoinverse(mat: np.ndarray) -> np.ndarray:
     return mat.T @ np.linalg.inv(mat @ mat.T)
 
 
-def hankel_matrix(rows: int, data: np.ndarray) -> np.ndarray:
+def hankel_matrix(rows: int, data: list | np.ndarray) -> np.ndarray:
     """
     Hankel matrix of a data sequence.
+    Returns one row per dimension of the data.
     Args:
         rows: number of rows in the Hankel matrix
         data: data sequence
     """
-    # Generalization of https://en.wikipedia.org/wiki/Hankel_matrix to arbitrary rows.
+    # Generalization of https://en.wikipedia.org/wiki/Hankel_matrix
+    # to arbitrary rows and dimensions.
+    data = np.array(data)
     cols = len(data) - rows + 1
-    return np.array([data[i : i + cols] for i in range(rows)])
+    if data.ndim == 1:
+        return np.array([data[i : i + cols] for i in range(rows)])
+    if data.ndim == 2:
+        return np.array([data[i : i + cols, j] for i in range(rows) for j in range(data.shape[1])])
+    raise ValueError("Data must be 1D or 2D.")
 
 
 def projected_gradient_method(
