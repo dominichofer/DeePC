@@ -71,23 +71,25 @@ class DiscreteLTI:
         eig_vals = np.linalg.eigvals(self.A)
         return bool(np.all(np.abs(eig_vals) < 1))
 
-    def apply(self, u: int | float | list) -> float | list:
+    def apply(self, u: int | float | tuple | list | np.ndarray) -> float | np.ndarray:
         "Apply input(s) and get output(s)"
-        if isinstance(u, list):
-            _u = np.array(u)
         if isinstance(u, (int, float)):
-            _u = np.array([u])
+            u = np.array([u])
+        elif isinstance(u, (tuple, list)):
+            u = np.array(list(u))
 
-        assert _u.shape[0] == self.B.shape[1]
+        assert u.shape[0] == self.B.shape[1]
 
-        self.x = self.A @ self.x + self.B @ _u
-        y = self.C @ self.x + self.D @ _u
+        self.x = self.A @ self.x + self.B @ u
+        y = self.C @ self.x + self.D @ u
 
         if y.shape[0] == 1:
             return y[0].item()
-        return y.tolist()
+        return y
 
-    def apply_multiple(self, u: list[int | float | list]) -> list[float | list]:
+    def apply_multiple(
+        self, u: list[int | float | tuple | list | np.ndarray]
+    ) -> list[float | np.ndarray]:
         "Apply multiple inputs and get multiple outputs"
         return [self.apply(u_i) for u_i in u]
 

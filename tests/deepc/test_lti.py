@@ -85,7 +85,7 @@ class TestDiscreteLTI(unittest.TestCase):
         )
         self.assertFalse(system.is_stable())
 
-    def test_apply_one(self):
+    def test_apply(self):
         system = DiscreteLTI(
             A=[[0.5, 0], [0.6, 0.1]],
             B=[[0.1], [1]],
