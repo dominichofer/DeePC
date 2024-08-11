@@ -59,7 +59,7 @@ class DiscreteLTI:
         # Q = [C, C @ A, C @ A^2, ..., C @ A^(n-1)]
         # where n is the number of states
         n = self.A.shape[0]
-        m = self.B.shape[1]
+        m = self.C.shape[1]
         Q = np.zeros((n * m, n))
         for i in range(n):
             Q[i * m : (i + 1) * m, :] = self.C @ np.linalg.matrix_power(self.A, i)
