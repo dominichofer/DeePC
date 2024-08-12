@@ -92,30 +92,10 @@ class DiscreteLTI:
         return [self.apply(u_i) for u_i in u]
 
 
-class LaggedLTI(DiscreteLTI):
-    "Lagged Discrete Linear Time-Invariant System"
-
-    def __init__(self, lag: int, x_ini: list) -> None:
-        "x_ini: Initial state"
-        assert lag >= 0
-        assert len(x_ini) == lag + 1
-
-        A = np.zeros((lag + 1, lag + 1))
-        A[:-1, 1:] = np.eye(lag)
-        B = np.zeros((lag + 1, 1))
-        B[-1, 0] = 1
-        C = np.zeros((1, lag + 1))
-        C[0, 0] = 1
-        D = np.zeros((1, 1))
-        super().__init__(A.tolist(), B.tolist(), C.tolist(), D.tolist(), x_ini)
-
-
 class RandomNoisyLTI(DiscreteLTI):
     "Discrete Linear Time-Invariant System with random noise"
 
-    def __init__(
-        self, A: list, B: list, C: list, D: list, x_ini: list, noise_std: float
-    ):
+    def __init__(self, A: list, B: list, C: list, D: list, x_ini: list, noise_std: float):
         """
         A: State matrix
         B: Input matrix

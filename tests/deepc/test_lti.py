@@ -1,5 +1,5 @@
 import unittest
-from deepc.lti import DiscreteLTI, LaggedLTI
+from deepc.lti import DiscreteLTI
 
 
 class TestDiscreteLTI(unittest.TestCase):
@@ -118,49 +118,6 @@ class TestDiscreteLTI(unittest.TestCase):
         )
         y = system.apply([1, 2])
         self.assertAlmostEqual(y, 2.2)
-
-
-class TestLaggedLTI(unittest.TestCase):
-    def test_lag_0(self):
-        system = LaggedLTI(lag=0, x_ini=[1])
-        self.assertTrue(system.is_controllable())
-        self.assertTrue(system.is_observable())
-        self.assertTrue(system.is_stable())
-
-        y = system.apply(2)
-        self.assertAlmostEqual(y, 2)
-
-    def test_lag_1(self):
-        system = LaggedLTI(lag=1, x_ini=[1, 2])
-        self.assertTrue(system.is_controllable())
-        self.assertTrue(system.is_observable())
-        self.assertTrue(system.is_stable())
-
-        y = system.apply(3)
-        self.assertAlmostEqual(y, 2)
-        y = system.apply(4)
-        self.assertAlmostEqual(y, 3)
-
-    def test_lag_2(self):
-        system = LaggedLTI(lag=2, x_ini=[1, 2, 3])
-        self.assertTrue(system.is_controllable())
-        self.assertTrue(system.is_observable())
-        self.assertTrue(system.is_stable())
-
-        y = system.apply(4)
-        self.assertAlmostEqual(y, 2)
-        y = system.apply(5)
-        self.assertAlmostEqual(y, 3)
-
-    def test_lag_5(self):
-        system = LaggedLTI(lag=5, x_ini=[1, 2, 3, 4, 5, 6])
-        self.assertTrue(system.is_controllable())
-        self.assertTrue(system.is_observable())
-        self.assertTrue(system.is_stable())
-
-        for i in range(10):
-            y = system.apply(7 + i)
-            self.assertAlmostEqual(y, 2 + i)
 
 
 if __name__ == "__main__":
