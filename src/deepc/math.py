@@ -3,10 +3,6 @@ from typing import Callable
 import numpy as np
 
 
-def clamp(value, lower_bound, upper_bound):
-    return np.minimum(np.maximum(value, lower_bound), upper_bound)
-
-
 def left_pseudoinverse(mat: np.ndarray) -> np.ndarray:
     # https://en.wikipedia.org/wiki/Moore%E2%80%93Penrose_inverse
     return np.linalg.inv(mat.T @ mat) @ mat.T

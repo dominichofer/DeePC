@@ -1,17 +1,6 @@
 import unittest
 import numpy as np
-from deepc.math import clamp, linear_chirp, left_pseudoinverse, right_pseudoinverse, hankel_matrix
-
-
-class TestClamp(unittest.TestCase):
-    def test_value_below(self):
-        self.assertEqual(clamp(0, 1, 2), 1)
-
-    def test_value_above(self):
-        self.assertEqual(clamp(3, 1, 2), 2)
-
-    def test_value_inside(self):
-        self.assertEqual(clamp(1, 1, 2), 1)
+from deepc.math import linear_chirp, left_pseudoinverse, right_pseudoinverse, hankel_matrix
 
 
 class TestLeftPseudoinverse(unittest.TestCase):
@@ -79,19 +68,13 @@ class TestHankelMatrix_2D_data(unittest.TestCase):
         np.testing.assert_array_equal(hankel_matrix(2, [(1, 2), (3, 4)]), [[1], [2], [3], [4]])
 
     def test_size_3_and_1_rows(self):
-        np.testing.assert_array_equal(
-            hankel_matrix(1, [(1, 2), (3, 4), (5, 6)]), [[1, 3, 5], [2, 4, 6]]
-        )
+        np.testing.assert_array_equal(hankel_matrix(1, [(1, 2), (3, 4), (5, 6)]), [[1, 3, 5], [2, 4, 6]])
 
     def test_size_3_and_2_rows(self):
-        np.testing.assert_array_equal(
-            hankel_matrix(2, [(1, 2), (3, 4), (5, 6)]), [[1, 3], [2, 4], [3, 5], [4, 6]]
-        )
+        np.testing.assert_array_equal(hankel_matrix(2, [(1, 2), (3, 4), (5, 6)]), [[1, 3], [2, 4], [3, 5], [4, 6]])
 
     def test_size_3_and_3_rows(self):
-        np.testing.assert_array_equal(
-            hankel_matrix(3, [(1, 2), (3, 4), (5, 6)]), [[1], [2], [3], [4], [5], [6]]
-        )
+        np.testing.assert_array_equal(hankel_matrix(3, [(1, 2), (3, 4), (5, 6)]), [[1], [2], [3], [4], [5], [6]])
 
 
 class TestLinearChirp(unittest.TestCase):
