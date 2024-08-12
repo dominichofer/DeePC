@@ -252,13 +252,15 @@ class Controller:
         self.u_ini.clear()
         self.y_ini.clear()
 
-    def apply(self, r: list | np.ndarray) -> list[float]:
+    def apply(self, r: list | np.ndarray) -> list[float] | None:
         """
         Returns the optimal control for a given reference trajectory.
         Args:
             r: Reference trajectory.
         """
-        assert self.is_initialized(), "Internal state is not initialized."
+        if not self.is_initialized():
+            return None
+
         assert len(r) == self.r_len, "Reference trajectory has wrong length."
 
         # Transform to column vectors
