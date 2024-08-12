@@ -87,9 +87,7 @@ class DiscreteLTI:
             return y[0].item()
         return y
 
-    def apply_multiple(
-        self, u: list[int | float | tuple | list | np.ndarray]
-    ) -> list[float | np.ndarray]:
+    def apply_multiple(self, u: list[int | float | tuple | list | np.ndarray]) -> list[float | np.ndarray]:
         "Apply multiple inputs and get multiple outputs"
         return [self.apply(u_i) for u_i in u]
 
@@ -110,3 +108,28 @@ class LaggedLTI(DiscreteLTI):
         C[0, 0] = 1
         D = np.zeros((1, 1))
         super().__init__(A.tolist(), B.tolist(), C.tolist(), D.tolist(), x_ini)
+
+
+class RandomNoisyLTI(DiscreteLTI):
+    "Discrete Linear Time-Invariant System with random noise"
+
+    def __init__(
+        self, A: list, B: list, C: list, D: list, x_ini: list, noise_std: float
+    ):
+        """
+        A: State matrix
+        B: Input matrix
+        C: Output matrix
+        D: Feedforward matrix
+        x_ini: Initial state
+        lower_noise_bound: Lower bound of the noise
+        upper_noise_bound: Upper bound of the noise
+        """
+        super().__init__(A, B, C, D, x_ini)
+        self.noise_std = noise_std
+
+    def apply(self, u: int | float | tuple | list | np.ndarray) -> float | np.ndarray:
+        "Apply input(s) and get output(s) with random noise"
+        y = super().apply(u)
+        noise = np.random.normal(0, self.noise_std, self.output_dim)
+        return y + noise
