@@ -277,4 +277,9 @@ class Controller:
                 self.max_pgm_iterations,
                 self.pgm_tolerance,
             )
-        return u_star[:, 0].tolist()
+
+        if self.u_is_1d:
+            u_star = u_star[:, 0]
+        else:
+            u_star = u_star.reshape(-1, self.u_ini[0].shape[0])
+        return u_star.tolist()
