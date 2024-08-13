@@ -46,7 +46,7 @@ def projected_gradient_method(
         target: target vector
         constrain: function that constrains the result
     """
-    step_size = 1 / np.linalg.matrix_norm(mat)
+    step_size = 1 / np.linalg.norm(mat)
     x_old = constrain(x_ini)
     for _ in range(max_iterations):
         x_new = constrain(x_old - step_size * (mat @ x_old - target))
