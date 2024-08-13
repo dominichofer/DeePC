@@ -27,8 +27,8 @@ std::vector<double> deePC(
     const std::vector<double>& u_ini,
     const std::vector<double>& y_ini,
     const std::vector<double>& r,
-    const IMatrix& Q,
-    const IMatrix& R,
+    const Matrix& Q,
+    const Matrix& R,
     std::function<std::vector<double>(const std::vector<double>&)> control_constrain_fkt = nullptr,
     int max_pgm_iterations = 300,
     double pgm_tolerance = 1e-6)
@@ -130,8 +130,8 @@ class DeePC
     int r_size;
     MaxSizeQueue u_ini, y_ini;
     DenseMatrix B, G;
-    const IMatrix& Q;
-    const IMatrix& R;
+    const Matrix& Q;
+    const Matrix& R;
     std::function<std::vector<double>(const std::vector<double>&)> control_constrain_fkt;
     int max_pgm_iterations;
     double pgm_tolerance;
@@ -141,8 +141,8 @@ public:
         const std::vector<double>& y_d,
         int T_ini,
         int r_size,
-        const IMatrix& Q,
-        const IMatrix& R,
+        const Matrix& Q,
+        const Matrix& R,
         std::function<std::vector<double>(const std::vector<double>&)> control_constrain_fkt = nullptr,
         int max_pgm_iterations = 300,
         double pgm_tolerance = 1e-6)

@@ -2,7 +2,7 @@
 #include <cassert>
 #include <cmath>
 
-DenseMatrix inv(const IMatrix& m)
+DenseMatrix inv(const Matrix& m)
 {
     assert(m.rows() == m.cols());
     int n = m.rows();
@@ -35,7 +35,7 @@ DenseMatrix inv(const IMatrix& m)
     }
 }
 
-double norm(const IMatrix& m)
+double norm(const Matrix& m)
 {
     double sum = 0;
     for (int i = 0; i < m.rows(); ++i)
@@ -48,7 +48,17 @@ double norm(const IMatrix& m)
     return std::sqrt(sum);
 }
 
-std::tuple<DenseMatrix, DenseMatrix, DenseMatrix> singular_value_decomposition(const IMatrix& m)
+int matrix_rank(const Matrix& m)
+{
+    auto [u, s, v] = singular_value_decomposition(m);
+    int rank = 0;
+    for (int i = 0; i < s.rows(); ++i)
+        if (s(i, i) > 1e-6)
+            ++rank;
+    return rank;    
+}
+
+std::tuple<DenseMatrix, DenseMatrix, DenseMatrix> singular_value_decomposition(const Matrix& m)
 {
     int rows = m.rows();
     int cols = m.cols();
@@ -65,31 +75,31 @@ std::tuple<DenseMatrix, DenseMatrix, DenseMatrix> singular_value_decomposition(c
     return {u, s, v};
 }
 
-DenseMatrix pseudoinverse(const IMatrix& m)
+DenseMatrix pseudoinverse(const Matrix& m)
 {
     auto [u, s, v] = singular_value_decomposition(m);
     return v * inv(s) * u;
 }
 
-DenseMatrix left_pseudoinverse(const IMatrix& m)
+DenseMatrix left_pseudoinverse(const Matrix& m)
 {
     auto mt = TransposedMatrix(m);
     return inv(mt * m) * mt;
 }
 
-DenseMatrix right_pseudoinverse(const IMatrix& m)
+DenseMatrix right_pseudoinverse(const Matrix& m)
 {
     auto mt = TransposedMatrix(m);
     return mt * inv(m * mt);
 }
 
-std::vector<double> solve(const IMatrix& a, const std::vector<double>& b)
+std::vector<double> solve(const Matrix& a, const std::vector<double>& b)
 {
     return inv(a) * b;
 }
 
 std::vector<double> projected_gradient_method(
-    const IMatrix& mat,
+    const Matrix& mat,
     const std::vector<double>& x_ini,
     const std::vector<double>& target,
     std::function<std::vector<double>(const std::vector<double>&)> constrain,

@@ -4,18 +4,18 @@
 #include <vector>
 
 // Interface for matrix
-class IMatrix
+class Matrix
 {
 public:
     virtual double operator()(int i, int j) const = 0;
     virtual int rows() const = 0;
     virtual int cols() const = 0;
-    virtual ~IMatrix() = default;
+    virtual ~Matrix() = default;
 
-    bool operator==(const IMatrix &) const;
+    bool operator==(const Matrix &) const;
 };
 
-class DiagonalMatrix : public IMatrix
+class DiagonalMatrix : public Matrix
 {
     std::vector<double> data;
 
@@ -26,30 +26,30 @@ public:
     inline int cols() const override { return data.size(); }
 };
 
-class TransposedMatrix : public IMatrix
+class TransposedMatrix : public Matrix
 {
-    const IMatrix &matrix;
+    const Matrix &matrix;
 
 public:
-    TransposedMatrix(const IMatrix &matrix) noexcept : matrix(matrix) {}
+    TransposedMatrix(const Matrix &matrix) noexcept : matrix(matrix) {}
     inline double operator()(int i, int j) const override { return matrix(j, i); }
     inline int rows() const override { return matrix.cols(); }
     inline int cols() const override { return matrix.rows(); }
 };
 
-class VStackMatrix : public IMatrix
+class VStackMatrix : public Matrix
 {
-    const IMatrix &a;
-    const IMatrix &b;
+    const Matrix &a;
+    const Matrix &b;
 
 public:
-    VStackMatrix(const IMatrix &a, const IMatrix &b) noexcept;
+    VStackMatrix(const Matrix &a, const Matrix &b) noexcept;
     double operator()(int i, int j) const override;
     inline int rows() const override { return a.rows() + b.rows(); }
     inline int cols() const override { return a.cols(); }
 };
 
-class HankelMatrix : public IMatrix
+class HankelMatrix : public Matrix
 {
     const std::vector<double> &data;
     int cols_;
@@ -61,19 +61,19 @@ public:
     inline int cols() const override { return cols_; }
 };
 
-class SubMatrix : public IMatrix
+class SubMatrix : public Matrix
 {
-    const IMatrix &matrix;
+    const Matrix &matrix;
     int row_begin, rows_, col_begin, cols_;
 
 public:
-    SubMatrix(const IMatrix &, int row_begin, int row_end, int col_begin, int col_end) noexcept;
+    SubMatrix(const Matrix &, int row_begin, int row_end, int col_begin, int col_end) noexcept;
     inline double operator()(int i, int j) const override { return matrix(row_begin + i, col_begin + j); }
     inline int rows() const override { return rows_; }
     inline int cols() const override { return cols_; }
 };
 
-class DenseMatrix : public IMatrix
+class DenseMatrix : public Matrix
 {
     std::vector<double> data;
     int cols_;
@@ -81,7 +81,7 @@ class DenseMatrix : public IMatrix
 public:
     DenseMatrix() noexcept = default;
     DenseMatrix(std::vector<double> data, int cols) noexcept;
-    explicit DenseMatrix(const IMatrix &) noexcept;
+    DenseMatrix(const Matrix &) noexcept;
     static DenseMatrix Zeros(int rows, int cols) noexcept;
 
     inline double operator()(int i, int j) const override { return data[i * cols_ + j]; }
@@ -90,17 +90,18 @@ public:
     inline int cols() const override { return cols_; }
 };
 
-std::string to_string(const IMatrix &);
+std::string to_string(const Matrix &);
 
 DiagonalMatrix IdentityMatrix(int size);
 DiagonalMatrix ZeroMatrix(int size);
 
-TransposedMatrix transposed(const IMatrix &);
+TransposedMatrix transposed(const Matrix &);
 
-VStackMatrix vstack(const IMatrix &, const IMatrix &);
-VStackMatrix vstack(const IMatrix &, const IMatrix &, const IMatrix &);
+VStackMatrix vstack(const Matrix &, const Matrix &);
+VStackMatrix vstack(const Matrix &, const Matrix &, const Matrix &);
 
-std::vector<double> operator*(const IMatrix &, const std::vector<double> &);
-DenseMatrix operator*(const IMatrix &, const IMatrix &);
-DenseMatrix operator+(const IMatrix &, const IMatrix &);
-DenseMatrix operator-(const IMatrix &, const IMatrix &);
+std::vector<double> operator*(const Matrix &, const std::vector<double> &);
+DenseMatrix operator*(const Matrix &, const Matrix &);
+DenseMatrix operator+(const Matrix &, const Matrix &);
+DenseMatrix operator-(const Matrix &, const Matrix &);
+DenseMatrix pow(const Matrix &, int);
