@@ -43,25 +43,25 @@ system = RandomNoisyLTI(
     D=[[0, 0, 0], 
        [0, 0, 0], 
        [0, 0, 0]],
-    x_ini=[0.1, 0.1, 0.1],
+    x_ini=[0.0, 0.0, 0.0],
    noise_std=0.0
 )
 
 print( "is it stable " ,system.is_stable())
 
-max_input = 10
-min_input = 0
+max_input = 5
+min_input = -5
 
 # Gather offline data
 N = 21
 # by defining a input sequence
-u_d = [[0,0,0]] * 3 + [[0,0,max_input]] * N + [[0,max_input,0]] * N + [[max_input,1,2]] * N
+#u_d = [[0,0,0]] * 3 + [[0,0,max_input]] * N + [[0,max_input,0]] * N + [[max_input,1,2]] * N
 # and applying it to the system
 
 shift = 3  # Number of steps to shift each channel
 
 # Generate PRBS sequence for 3 channels with shift
-#u_d = generate_prbs(N*4, num_channels=3, levels=[min_input, max_input], shift=shift)
+u_d = generate_prbs(N*4, num_channels=3, levels=[min_input, max_input], shift=shift)
 
 # Apply it to the system
 y_d = system.apply_multiple(u_d)
@@ -95,10 +95,10 @@ plt.tight_layout()
 
 # Define how many steps the controller should look back
 # to grasp the current state of the system
-T_ini = 17
+T_ini = 11
 
 # Define how many steps the controller should look forward
-r_len = 11
+r_len = 7
 
 # Define the controller
 constraint = lambda u: np.clip(u, 0, max_input)

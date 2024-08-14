@@ -190,7 +190,7 @@ class Controller:
         if Q is None:
             Q = np.eye(r_len * y_ndim)*10
         if R is None:
-            R = np.eye((r_len * u_ndim))*0.1
+            R = np.eye((r_len * u_ndim))*0.01
         self.Q = Q
         self.R = R
         self.control_constrain_fkt = control_constrain_fkt
@@ -226,7 +226,7 @@ class Controller:
 
         # We define (M_x, M_u) := M such that M_x * x + M_u * u = y.
         self.M_x = M[:, : T_ini * (u_ndim + y_ndim)]
-        self.M_u = M[:, T_ini * (u_ndim + y_ndim) :]
+        self.M_u = M[:,   T_ini * (u_ndim + y_ndim) :]
 
         # We can now solve the unconstrained problem.
         # This is a ridge regression problem with generalized Tikhonov regularization.
@@ -237,6 +237,10 @@ class Controller:
 
         # We precompute the matrix G = M_u^T * Q * M_u + R.
         self.G = self.M_u.T @ self.Q @ self.M_u + self.R
+
+        # the steady state formulation is
+        #“minimize:∥y−r∥Q2​+∥u−uss​∥R2​”
+        self.u_ss = 0.0 # for testing
 
     def is_initialized(self) -> bool:
         "Returns whether the internal state is initialized."
@@ -269,7 +273,7 @@ class Controller:
         y_ini = [y.reshape(-1) for y in self.y_ini]
 
         x = np.concatenate([u_ini, y_ini]).reshape(-1, 1)
-        w = self.M_u.T @ self.Q @ (r - self.M_x @ x)
+        w = self.M_u.T @ self.Q @ (r - self.M_x @ x) +self.R*self.u_ss
         u_star = np.linalg.solve(self.G, w)
 
         if self.control_constrain_fkt is not None:
@@ -287,4 +291,6 @@ class Controller:
         else:
             u_star = u_star.reshape(-1, self.u_ini[0].shape[0])
             print(u_star)
+
+        self.u_ss = u_star[0]*0.1 + self.u_ss*0.9# dirty try
         return u_star.tolist()

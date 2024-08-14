@@ -14,7 +14,7 @@ system = RandomNoisyLTI(
     C=[[1, 0]],
     D=[[0]],
     x_ini=[1, 1],
-    noise_std=0.1
+    noise_std=0.0
 )
 # Gather offline data
 N = 500
@@ -31,8 +31,8 @@ T_ini = 21 # seems like should be bigger than r_len
 r_len = 17
 
 # Define the controller
-constraint = lambda u: np.clip(u, 0, 5)
-controller = Controller(u_d, y_d, T_ini, r_len, control_constrain_fkt=constraint)
+constraint = lambda u: np.clip(u, 0, 50)
+controller = Controller(u_d, y_d, T_ini, r_len)#, control_constrain_fkt=constraint
 
 # Reset the system
 # to sepereate the offline data from the online data
@@ -52,7 +52,7 @@ assert controller.is_initialized()
 # Simulate the system
 u_online = []
 y_online = []
-r_online = [0.5] * 40 + [7] * 200 + [7] * 100 + [7]*50
+r_online = [0.5] * 40 + [33] * 100 + [7] * 100 + [7]*50
 for i in range(len(r_online) - r_len):
     r = r_online[i: i + r_len]
     u = controller.apply(r)[0]
