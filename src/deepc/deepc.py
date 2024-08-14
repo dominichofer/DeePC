@@ -68,7 +68,7 @@ def deePC(
     if Q is None:
         Q = np.eye(r_len * y_ndim)
     if R is None:
-        R = np.zeros((r_len * u_ndim, r_len * u_ndim))
+        R = np.eye((r_len * u_ndim, r_len * u_ndim))*0.01
 
     U = hankel_matrix(T_ini + r_len, u_d)
     U_p = U[: T_ini * u_ndim, :]  # past
@@ -188,9 +188,9 @@ class Controller:
             for y in y_ini:
                 self.y_ini.append(np.array(y))
         if Q is None:
-            Q = np.eye(r_len * y_ndim)
+            Q = np.eye(r_len * y_ndim)*10
         if R is None:
-            R = np.zeros((r_len * u_ndim, r_len * u_ndim))
+            R = np.eye((r_len * u_ndim))*0.1
         self.Q = Q
         self.R = R
         self.control_constrain_fkt = control_constrain_fkt
@@ -264,7 +264,11 @@ class Controller:
         # Transform to column vectors
         r = np.array(r).reshape(-1, 1)
 
-        x = np.concatenate([self.u_ini, self.y_ini]).reshape(-1, 1)
+        #found a bug in yini (local reshape, because else the check is initialized fails)
+        u_ini = [u.reshape(-1) for u in self.u_ini]
+        y_ini = [y.reshape(-1) for y in self.y_ini]
+
+        x = np.concatenate([u_ini, y_ini]).reshape(-1, 1)
         w = self.M_u.T @ self.Q @ (r - self.M_x @ x)
         u_star = np.linalg.solve(self.G, w)
 
