@@ -26,13 +26,13 @@ y_d = system.apply_multiple(u_d)
 
 # Define how many steps the controller should look back
 # to grasp the current state of the system
-T_ini = 21 # seems like should be bigger than r_len
+T_ini = 17 # seems like should be bigger than r_len
 # Define how many steps the controller should look forward
-r_len = 17
+r_len = 11
 
 # Define the controller
 constraint = lambda u: np.clip(u, 0, 50)
-controller = Controller(u_d, y_d, T_ini, r_len)#, control_constrain_fkt=constraint
+controller = Controller(u_d, y_d, T_ini, r_len, control_constrain_fkt=constraint)#
 
 # Reset the system
 # to sepereate the offline data from the online data
@@ -52,7 +52,7 @@ assert controller.is_initialized()
 # Simulate the system
 u_online = []
 y_online = []
-r_online = [0.5] * 40 + [33] * 100 + [7] * 100 + [7]*50
+r_online = [0.5] * 40 + [10] * 100 + [10] * 100 + [14]*150
 for i in range(len(r_online) - r_len):
     r = r_online[i: i + r_len]
     u = controller.apply(r)[0]

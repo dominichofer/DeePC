@@ -23,7 +23,7 @@ def hankel_matrix(rows: int, data: list | np.ndarray) -> np.ndarray:
     """
     # Generalization of https://en.wikipedia.org/wiki/Hankel_matrix
     # to arbitrary rows and dimensions.
-    print("dim " ,data.ndim)
+    #print("dim " ,data.ndim)
     data = np.array(data)
     cols = len(data) - rows + 1
     if data.ndim == 1:

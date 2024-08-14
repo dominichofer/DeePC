@@ -191,6 +191,7 @@ class Controller:
             Q = np.eye(r_len * y_ndim)*10
         if R is None:
             R = np.eye((r_len * u_ndim))*0.01
+
         self.Q = Q
         self.R = R
         self.control_constrain_fkt = control_constrain_fkt
@@ -273,7 +274,7 @@ class Controller:
         y_ini = [y.reshape(-1) for y in self.y_ini]
 
         x = np.concatenate([u_ini, y_ini]).reshape(-1, 1)
-        w = self.M_u.T @ self.Q @ (r - self.M_x @ x) +self.R*self.u_ss
+        w = self.M_u.T @ self.Q @ (r - self.M_x @ x) #+self.R*self.u_ss
         u_star = np.linalg.solve(self.G, w)
 
         if self.control_constrain_fkt is not None:
@@ -290,7 +291,11 @@ class Controller:
             u_star = u_star[:, 0]
         else:
             u_star = u_star.reshape(-1, self.u_ini[0].shape[0])
-            print(u_star)
+            #print(u_star)
 
-        self.u_ss = u_star[0]*0.1 + self.u_ss*0.9# dirty try
+        self.u_ss = u_star[0]*0.2 + self.u_ss*0.8# dirty try
+
+        u_ss = np.linalg.pinv(self.M_u) @ r #(r - self.M_x @ x) # we dont have xss so using x
+
+        #print("u filter ", self.u_ss, " vs computed ", u_ss)
         return u_star.tolist()
