@@ -10,6 +10,7 @@ def deePC(
     u_ini: list | np.ndarray,
     y_ini: list | np.ndarray,
     r: list | np.ndarray,
+    u_0: list | np.ndarray | None = None,
     Q: np.ndarray | None = None,
     R: np.ndarray | None = None,
     control_constrain_fkt: Callable | None = None,
@@ -26,6 +27,7 @@ def deePC(
         u_ini: Control inputs to initiate the state.
         y_ini: Outputs to initiate the state.
         r: Reference trajectory.
+        u_0: Reference control input, defaults to zero vector.
         Q: Output cost matrix, defaults to identity matrix.
         R: Control cost matrix, defaults to zero matrix.
         control_constrain_fkt: Function that constrains the control.
@@ -49,10 +51,19 @@ def deePC(
     r = np.array(r)
     if r.ndim == 1:
         r = r.reshape(-1, 1)
+    if u_0 is None:
+        u_0 = np.zeros((len(r), u_ini.shape[1]))
+    else:
+        u_0 = np.array(u_0)
+        if u_0.ndim == 1:
+            u_0 = u_0.reshape(-1, 1)
 
     assert len(u_d) == len(y_d), "u_d and y_d must have the same length."
     assert len(u_ini) == len(y_ini), "u_ini and y_ini must have the same length."
-    assert u_d.shape[1] == u_ini.shape[1], "Elements of u_d and u_ini must have the same dimension."
+    assert len(u_0) == len(r), "u_0 and r must have the same length."
+    assert (
+        u_d.shape[1] == u_ini.shape[1] == u_0.shape[1]
+    ), "Elements of u_d, u_ini, and u_0 must have the same dimension."
     assert y_d.shape[1] == y_ini.shape[1] == r.shape[1], "Elements of y_d, y_ini, and r must have the same dimension."
 
     T_ini = len(u_ini)
@@ -64,6 +75,7 @@ def deePC(
     r = r.reshape(-1, 1)
     u_ini = u_ini.reshape(-1, 1)
     y_ini = y_ini.reshape(-1, 1)
+    u_0 = u_0.reshape(-1, 1)
 
     if Q is None:
         Q = np.eye(r_len * y_ndim)
@@ -109,7 +121,7 @@ def deePC(
     # subject to: M_u * u = y - M_x * x
 
     G = M_u.T @ Q @ M_u + R
-    w = M_u.T @ Q @ (r - M_x @ x)
+    w = M_u.T @ Q @ (r - M_x @ x) + R @ u_0
     u_star = np.linalg.solve(G, w)
 
     if control_constrain_fkt is not None:
@@ -252,7 +264,7 @@ class Controller:
         self.u_ini.clear()
         self.y_ini.clear()
 
-    def apply(self, r: list | np.ndarray) -> list[float] | None:
+    def apply(self, r: list | np.ndarray, u_0: list | np.ndarray | None = None) -> list[float] | None:
         """
         Returns the optimal control for a given reference trajectory.
         Args:
@@ -261,13 +273,25 @@ class Controller:
         if not self.is_initialized():
             return None
 
+        if u_0 is None:
+            if self.u_is_1d:
+                u_0 = np.zeros((len(r), 1))
+            else:
+                u_0 = np.zeros((len(r), self.u_ini[0].shape[1]))
+        else:
+            u_0 = np.array(u_0)
+            if u_0.ndim == 1:
+                u_0 = u_0.reshape(-1, 1)
+
         assert len(r) == self.r_len, "Reference trajectory has wrong length."
+        assert len(u_0) == len(r), "u_0 and r must have the same length."
 
         # Transform to column vectors
         r = np.array(r).reshape(-1, 1)
+        u_0 = u_0.reshape(-1, 1)
 
         x = np.concatenate([self.u_ini, self.y_ini]).reshape(-1, 1)
-        w = self.M_u.T @ self.Q @ (r - self.M_x @ x)
+        w = self.M_u.T @ self.Q @ (r - self.M_x @ x) + self.R @ u_0
         u_star = np.linalg.solve(self.G, w)
 
         if self.control_constrain_fkt is not None:
