@@ -68,7 +68,7 @@ def deePC(
     if Q is None:
         Q = np.eye(r_len * y_ndim)
     if R is None:
-        R = np.eye((r_len * u_ndim, r_len * u_ndim))*0.01
+        R = np.zeros((r_len * u_ndim, r_len * u_ndim))
 
     U = hankel_matrix(T_ini + r_len, u_d)
     U_p = U[: T_ini * u_ndim, :]  # past
@@ -209,7 +209,7 @@ class Controller:
         # subject to: [U_p; Y_p; U_f; Y_f] * g = [u_ini; y_ini; u; y]
 
         # We define
-        A = np.block([[U_p], [Y_p], [U_f]])
+        Mraw = np.block([[U_p], [Y_p], [U_f]])
         # x = [u_ini; y_ini]
         # to get
         # A * g = [x; u]  (1)
@@ -221,7 +221,7 @@ class Controller:
         # Substituting g in (2) gives Y_f * pinv(A) * [x; u] = y.
 
         # We define
-        M = Y_f @ np.linalg.pinv(A)
+        M = Y_f @ np.linalg.pinv(Mraw)
         # and get M * [x; u] = y.
 
         # We define (M_x, M_u) := M such that M_x * x + M_u * u = y.
@@ -264,7 +264,7 @@ class Controller:
         # Transform to column vectors
         r = np.array(r).reshape(-1, 1)
 
-        #found a bug in yini (local reshape, because else the check is initialized fails)
+        #found a bug in yini (local reshape, because else the check isinitialized fails)
         u_ini = [u.reshape(-1) for u in self.u_ini]
         y_ini = [y.reshape(-1) for y in self.y_ini]
 
@@ -286,4 +286,5 @@ class Controller:
             u_star = u_star[:, 0]
         else:
             u_star = u_star.reshape(-1, self.u_ini[0].shape[0])
+            print(u_star)
         return u_star.tolist()
