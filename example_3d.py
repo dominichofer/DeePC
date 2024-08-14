@@ -87,7 +87,7 @@ while not controller.is_initialized():
 # Simulate the system
 u_online = []
 y_online = []
-r_online = [[0, 0, 0]] * 20 + [[10, 15, 20]] * 200 + [[20, 5, 10]] * 300
+r_online = [[0, 0, 0]] * 20 + [[10, 15, 20]] * 200 + [[2, 2, 2]] * 300
 for i in range(len(r_online) - r_len):
     r = r_online[i: i + r_len]
     u = controller.apply(r)[0]
