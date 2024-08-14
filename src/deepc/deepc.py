@@ -190,7 +190,7 @@ class Controller:
         if Q is None:
             Q = np.eye(r_len * y_ndim)*10
         if R is None:
-            R = np.eye((r_len * u_ndim))*0.01
+            R = np.zeros((r_len * u_ndim))
 
         self.Q = Q
         self.R = R
