@@ -41,7 +41,7 @@ def generate_prbs_with_shift(length, num_channels=3, levels=[0, 10], shift=10, s
 length = 64
 num_channels = 3
 levels = [0, 10]
-shift = 1
+shift = 10
 samples_n = 6
 
 prbs_sequence = generate_prbs_with_shift(length, num_channels, levels, shift, samples_n)
@@ -70,12 +70,13 @@ max_input = 10
 min_input = 0
 
 # Gather offline data
-N = 13
+N = 27
 # by defining a input sequence
 #u_d = [[0,0,max_input]] * N + [[0,max_input,0]] * N + [[max_input,0,0]] * N
 # and applying it to the system
 
-u_d = prbs_sequence;#overwriting above
+#u_d = prbs_sequence;#overwriting above
+u_d = [[x,y,z] for x in range(10) for y in range(10) for z in range(10) for _ in range(N)]
 
 # Apply it to the system
 y_d = system.apply_multiple(u_d)
