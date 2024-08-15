@@ -38,22 +38,22 @@ def generate_prbs_with_shift(length, num_channels=3, levels=[0, 10], shift=10, s
     return prbs_sequence
 
 # Usage example:
-length = 100
+length = 64
 num_channels = 3
 levels = [0, 10]
 shift = 1
-samples_n = 16
+samples_n = 6
 
 prbs_sequence = generate_prbs_with_shift(length, num_channels, levels, shift, samples_n)
 
 # Define a system
 system = RandomNoisyLTI(
     A=[[0.8, 0.0, 0.0], 
-       [0.0, 0.8, 0.0], 
-       [0.0, 0.0, 0.7]],
+       [0.0, 0.84, 0.0], 
+       [0.0, 0.0, 0.81]],
     B=[[0.4, 0, 0], 
        [0, 0.31, 0], 
-       [0, 0, 0.90]],
+       [0, 0, 0.30]],
     C=[[1, 0, 0], 
        [0, 1, 0], 
        [0, 0, 1]],
@@ -72,7 +72,7 @@ min_input = 0
 # Gather offline data
 N = 13
 # by defining a input sequence
-u_d = [[0,0,max_input]] * N + [[0,max_input,0]] * N + [[max_input,0,0]] * N
+#u_d = [[0,0,max_input]] * N + [[0,max_input,0]] * N + [[max_input,0,0]] * N
 # and applying it to the system
 
 u_d = prbs_sequence;#overwriting above
@@ -109,10 +109,10 @@ plt.tight_layout()
 
 # Define how many steps the controller should look back
 # to grasp the current state of the system
-T_ini = 27
+T_ini = 20
 
 # Define how many steps the controller should look forward
-r_len = 17
+r_len = 10
 
 # Define the controller
 constraint = lambda u: np.clip(u, min_input, max_input)
@@ -138,7 +138,7 @@ y_online = []
 r_online = [[0, 5, 0]] * 200 + [[0, 0, 5]] * 200 + [[5, 4, 3]] * 200
 for i in range(len(r_online) - r_len):
     r = r_online[i: i + r_len]
-    u = controller.apply(r)[0]
+    u = controller.apply(r, u_ss)[0]
     y = system.apply(u)#
     controller.update(u, y)
     u_online.append(u)

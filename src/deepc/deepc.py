@@ -80,7 +80,7 @@ def deePC(
     if Q is None:
         Q = np.eye(r_len * y_ndim)
     if R is None:
-        R = np.zeros((r_len * u_ndim, r_len * u_ndim))
+        R = np.eye((r_len * u_ndim))
 
     U = hankel_matrix(T_ini + r_len, u_d)
     U_p = U[: T_ini * u_ndim, :]  # past
@@ -202,7 +202,7 @@ class Controller:
         if Q is None:
             Q = np.eye(r_len * y_ndim)*10
         if R is None:
-            R = np.zeros((r_len * u_ndim))
+            R = np.eye((r_len * u_ndim))
 
         self.Q = Q
         self.R = R
@@ -289,23 +289,23 @@ class Controller:
                 u_0 = u_0.reshape(-1, 1)
 
         assert len(r) == self.r_len, "Reference trajectory has wrong length."
-        assert len(u_0) == len(r), "u_0 and r must have the same length."
-
+       
         # Transform to column vectors
         r = np.array(r).reshape(-1, 1)
         u_0 = u_0.reshape(-1, 1)
+        u_0_expanded = np.tile(u_0, self.r_len).reshape(-1,1)
 
-<<<<<<< HEAD
+        assert len(u_0_expanded) == len(r), "u_0 and input dim must have the same length."
+
+
         #found a bug in yini (local reshape, because else the check isinitialized fails)
         u_ini = [u.reshape(-1) for u in self.u_ini]
         y_ini = [y.reshape(-1) for y in self.y_ini]
 
         x = np.concatenate([u_ini, y_ini]).reshape(-1, 1)
-        w = self.M_u.T @ self.Q @ (r - self.M_x @ x) #+self.R*self.u_ss
-=======
-        x = np.concatenate([self.u_ini, self.y_ini]).reshape(-1, 1)
-        w = self.M_u.T @ self.Q @ (r - self.M_x @ x) + self.R @ u_0
->>>>>>> origin/u_zero
+
+        w = self.M_u.T @ self.Q @ (r - self.M_x @ x) + self.R @ u_0_expanded
+
         u_star = np.linalg.solve(self.G, w)
 
         if self.control_constrain_fkt is not None:
