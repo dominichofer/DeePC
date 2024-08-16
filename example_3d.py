@@ -120,7 +120,7 @@ r_len = 1
 
 # Define the controller
 constraint = lambda u: np.clip(u, min_input, max_input)
-controller = Controller(u_d, y_d, T_ini, r_len,R= np.eye((r_len*3))*0.01, control_constrain_fkt=constraint )
+controller = Controller(u_d, y_d, T_ini, r_len, control_constrain_fkt=constraint )
 
 # Reset the system
 # to sepereate the offline data from the online data

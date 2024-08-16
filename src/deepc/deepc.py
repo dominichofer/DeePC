@@ -254,6 +254,49 @@ class Controller:
         self.G = self.M_u.T @ self.Q @ self.M_u + self.R
 
 
+
+        # MOESP Estimation
+        # 1. Combine past data
+        Wp = np.vstack([U_p, Y_p])
+
+        # 2. QR Decomposition
+        Q, R = np.linalg.qr(Wp)
+
+        # 3. Projection of future outputs
+        Pi = Q.T @ np.vstack([U_f,Y_f])
+
+        # 4. SVD on the projection matrix
+        U, Sigma, VT = np.linalg.svd(Pi, full_matrices=False)
+
+        # 5. State sequence (r is the guessed system order)
+        r = 3
+        X = np.sqrt(Sigma[:r])[:, np.newaxis] * VT[:r, :]  # Reshape X to ensure it has 2D structure
+
+        # 6. Estimate C
+        C = U[:, :r]
+
+        # 7. Estimate A (from shifted states)
+        A = X[:, 1:] @ np.linalg.pinv(X[:, :-1]).round(decimals=3)    
+
+        # 8. Estimate B (solve least squares)
+        B = np.linalg.lstsq(U_p.T, X.T, rcond=None)[0].T
+
+        print(" B " , B)
+
+
+        print(" A " , A )
+
+        print(" C " , C)
+
+
+
+
+
+
+
+
+
+
         suggested_dims_U, suggested_dims_Y = suggest_dimensions(U_p, U_f, Y_p, Y_f, energy_threshold=0.999)
 
     def is_initialized(self) -> bool:
