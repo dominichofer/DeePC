@@ -131,6 +131,8 @@ def deePC(
         u_star = u_star[:, 0]
     else:
         u_star = u_star.reshape(-1, u_d.shape[1])
+
+
     return u_star.tolist()
 
 
@@ -251,9 +253,8 @@ class Controller:
         # We precompute the matrix G = M_u^T * Q * M_u + R.
         self.G = self.M_u.T @ self.Q @ self.M_u + self.R
 
-        # the steady state formulation is
-        #“minimize:∥y−r∥Q2​+∥u−uss​∥R2​”
-        self.u_ss = 0.0 # for testing
+
+        suggested_dims_U, suggested_dims_Y = suggest_dimensions(U_p, U_f, Y_p, Y_f, energy_threshold=0.999)
 
     def is_initialized(self) -> bool:
         "Returns whether the internal state is initialized."
@@ -324,9 +325,59 @@ class Controller:
             u_star = u_star.reshape(-1, self.u_ini[0].shape[0])
             #print(u_star)
 
-        self.u_ss = u_star[0]*0.2 + self.u_ss*0.8# dirty try
-
-        u_ss = np.linalg.pinv(self.M_u) @ r #(r - self.M_x @ x) # we dont have xss so using x
+        #self.u_ss = u_star[0]*0.2 + self.u_ss*0.8# dirty try
+        #u_ss = np.linalg.pinv(self.M_u) @ r #(r - self.M_x @ x) # we dont have xss so using x
 
         #print("u filter ", self.u_ss, " vs computed ", u_ss)
+
         return u_star.tolist()
+
+
+
+from numpy.linalg import matrix_rank, svd
+
+
+def assess_matrix_quality(matrix):
+    """ Assess the quality of the matrix using rank, condition number, and singular values. """
+    rank = matrix_rank(matrix)
+    _, s, _ = svd(matrix)
+    cond_number = np.linalg.cond(matrix)
+    energy_retained = np.cumsum(s**2) / np.sum(s**2)
+    
+    return rank, cond_number, s, energy_retained
+
+def suggest_dimensions(U_p, U_f, Y_p, Y_f, energy_threshold=0.99):
+    """ Suggest optimal dimensions based on the energy retained in the principal components. """
+    # Assess U_p and U_f
+    rank_U_p, cond_U_p, s_U_p, energy_U_p = assess_matrix_quality(U_p)
+    rank_U_f, cond_U_f, s_U_f, energy_U_f = assess_matrix_quality(U_f)
+    
+    # Assess Y_p and Y_f
+    rank_Y_p, cond_Y_p, s_Y_p, energy_Y_p = assess_matrix_quality(Y_p)
+    rank_Y_f, cond_Y_f, s_Y_f, energy_Y_f = assess_matrix_quality(Y_f)
+    
+    # Suggest number of dimensions to retain
+    suggested_dims_U = np.searchsorted(energy_U_p, energy_threshold) + 1
+    suggested_dims_Y = np.searchsorted(energy_Y_p, energy_threshold) + 1
+    
+    print("Assessment of U_p:")
+    print(f"Dimensions: {U_p.shape}")
+    print(f"Rank: {rank_U_p}, Condition Number: {cond_U_p}")
+    print(f"Suggested dimensions (U): {suggested_dims_U} (retaining {energy_threshold*100}% energy)")
+    
+    print("Assessment of U_f:")
+    print(f"Dimensions: {U_f.shape}")
+    print(f"Rank: {rank_U_f}, Condition Number: {cond_U_f}")
+    
+    print("Assessment of Y_p:")
+    print(f"Dimensions: {Y_p.shape}")
+    print(f"Rank: {rank_Y_p}, Condition Number: {cond_Y_p}")
+    print(f"Suggested dimensions (Y): {suggested_dims_Y} (retaining {energy_threshold*100}% energy)")
+    
+    print("Assessment of Y_f:")
+    print(f"Dimensions: {Y_f.shape}")
+    print(f"Rank: {rank_Y_f}, Condition Number: {cond_Y_f}")
+    
+    return suggested_dims_U, suggested_dims_Y
+
+
