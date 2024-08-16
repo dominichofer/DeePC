@@ -48,9 +48,9 @@ prbs_sequence = generate_prbs_with_shift(length, num_channels, levels, shift, sa
 
 # Define a system
 system = RandomNoisyLTI(
-    A=[[0.8, 0.0, 0.0], 
-       [0.0, 0.84, 0.0], 
-       [0.0, 0.0, 0.81]],
+    A=[[0.8, 0.0, 0.02], 
+       [0.03, 0.84, 0.1], 
+       [0.0, 0.02, 0.81]],
     B=[[0.4, 0, 0], 
        [0, 0.31, 0], 
        [0, 0, 0.30]],
@@ -66,8 +66,8 @@ system = RandomNoisyLTI(
 
 print( "is it stable " ,system.is_stable())
 
-max_input = 4
-min_input = 0
+max_input = 6
+min_input = -6
 
 # Gather offline data
 N = 1
@@ -113,7 +113,7 @@ plt.tight_layout()
 
 # Define how many steps the controller should look back
 # to grasp the current state of the system
-T_ini = 1
+T_ini = 2
 
 # Define how many steps the controller should look forward
 r_len = 1
