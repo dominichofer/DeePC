@@ -110,7 +110,7 @@ def deePC(
 
     G = M_u.T @ Q @ M_u + R
     w = M_u.T @ Q @ (r - M_x @ x)
-    u_star = np.linalg.solve(G, w)
+    u_star = np.linalg.lstsq(G, w)[0]
 
     if control_constrain_fkt is not None:
         u_star = projected_gradient_method(G, u_star, w, control_constrain_fkt, max_pgm_iterations, pgm_tolerance)
@@ -268,7 +268,7 @@ class Controller:
 
         x = np.concatenate([self.u_ini, self.y_ini]).reshape(-1, 1)
         w = self.M_u.T @ self.Q @ (r - self.M_x @ x)
-        u_star = np.linalg.solve(self.G, w)
+        u_star = np.linalg.lstsq(self.G, w)[0]
 
         if self.control_constrain_fkt is not None:
             u_star = projected_gradient_method(

@@ -92,7 +92,7 @@ class DiscreteLTI:
         return [self.apply(u_i) for u_i in u]
 
 
-class RandomNoisyLTI(DiscreteLTI):
+class RandomNoiseDiscreteLTI(DiscreteLTI):
     "Discrete Linear Time-Invariant System with random noise"
 
     def __init__(self, A: list, B: list, C: list, D: list, x_ini: list, noise_std: float):

@@ -2,7 +2,7 @@
 #include <cassert>
 #include <cmath>
 
-bool IMatrix::operator==(const IMatrix& o) const
+bool Matrix::operator==(const Matrix& o) const
 {
     if (rows() != o.rows() || cols() != o.cols())
         return false;
@@ -13,7 +13,7 @@ bool IMatrix::operator==(const IMatrix& o) const
     return true;
 }
 
-std::string to_string(const IMatrix& m)
+std::string to_string(const Matrix& m)
 {
     using std::to_string;
 	std::string str = "[";
@@ -44,19 +44,19 @@ DiagonalMatrix ZeroMatrix(int size)
     return DiagonalMatrix(std::vector<double>(size, 0));
 }
 
-TransposedMatrix transposed(const IMatrix& matrix)
+TransposedMatrix transposed(const Matrix& matrix)
 {
     return TransposedMatrix(matrix);
 }
 
-SubMatrix::SubMatrix(const IMatrix& matrix, int row_begin, int row_end, int col_begin, int col_end) noexcept
+SubMatrix::SubMatrix(const Matrix& matrix, int row_begin, int row_end, int col_begin, int col_end) noexcept
     : matrix(matrix), row_begin(row_begin), rows_(row_end - row_begin), col_begin(col_begin), cols_(col_end - col_begin)
 {
     assert(row_begin >= 0 && row_end <= matrix.rows());
     assert(col_begin >= 0 && col_end <= matrix.cols());
 }
 
-VStackMatrix::VStackMatrix(const IMatrix& a, const IMatrix& b) noexcept : a(a), b(b)
+VStackMatrix::VStackMatrix(const Matrix& a, const Matrix& b) noexcept : a(a), b(b)
 {
     assert(a.cols() == b.cols());
 }
@@ -69,12 +69,12 @@ double VStackMatrix::operator()(int i, int j) const
         return b(i - a.rows(), j);
 }
 
-VStackMatrix vstack(const IMatrix& a, const IMatrix& b)
+VStackMatrix vstack(const Matrix& a, const Matrix& b)
 {
     return VStackMatrix(a, b);
 }
 
-VStackMatrix vstack(const IMatrix& a, const IMatrix& b, const IMatrix& c)
+VStackMatrix vstack(const Matrix& a, const Matrix& b, const Matrix& c)
 {
     return VStackMatrix(a, vstack(b, c));
 }
@@ -84,7 +84,7 @@ DenseMatrix::DenseMatrix(std::vector<double> data, int cols) noexcept : data(std
     assert(this->data.size() % cols_ == 0);
 }
 
-DenseMatrix::DenseMatrix(const IMatrix& m) noexcept : data(m.rows()* m.cols()), cols_(m.cols())
+DenseMatrix::DenseMatrix(const Matrix& m) noexcept : data(m.rows()* m.cols()), cols_(m.cols())
 {
     for (int i = 0; i < m.rows(); ++i)
         for (int j = 0; j < m.cols(); ++j)
@@ -95,7 +95,7 @@ DenseMatrix DenseMatrix::Zeros(int rows, int cols) noexcept
     return DenseMatrix(std::vector<double>(rows * cols, 0), cols);
 }
 
-std::vector<double> operator*(const IMatrix& a, const std::vector<double>& b)
+std::vector<double> operator*(const Matrix& a, const std::vector<double>& b)
 {
     assert(a.cols() == b.size());
     int cols = a.cols();
@@ -111,7 +111,7 @@ std::vector<double> operator*(const IMatrix& a, const std::vector<double>& b)
     return result;
 }
 
-DenseMatrix operator*(const IMatrix& a, const IMatrix& b)
+DenseMatrix operator*(const Matrix& a, const Matrix& b)
 {
     assert(a.cols() == b.rows());
     int a_rows = a.rows();
@@ -129,7 +129,7 @@ DenseMatrix operator*(const IMatrix& a, const IMatrix& b)
     return result;
 }
 
-DenseMatrix operator+(const IMatrix& a, const IMatrix& b)
+DenseMatrix operator+(const Matrix& a, const Matrix& b)
 {
     assert(a.rows() == b.rows() && a.cols() == b.cols());
     int a_rows = a.rows();
@@ -141,7 +141,7 @@ DenseMatrix operator+(const IMatrix& a, const IMatrix& b)
     return result;
 }
 
-DenseMatrix operator-(const IMatrix& a, const IMatrix& b)
+DenseMatrix operator-(const Matrix& a, const Matrix& b)
 {
     assert(a.rows() == b.rows() && a.cols() == b.cols());
     int a_rows = a.rows();
@@ -151,4 +151,20 @@ DenseMatrix operator-(const IMatrix& a, const IMatrix& b)
         for (int j = 0; j < a_cols; ++j)
             result(i, j) = a(i, j) - b(i, j);
     return result;
+}
+
+DenseMatrix pow(const Matrix& a, int n)
+{
+    assert(a.rows() == a.cols());
+    if (n == 0)
+        return IdentityMatrix(a.rows());
+    if (n == 1)
+        return a;
+    if (n % 2 == 0)
+    {
+        auto half = pow(a, n / 2);
+        return half * half;
+    }
+    else
+        return a * pow(a, n - 1);
 }
