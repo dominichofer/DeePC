@@ -2,6 +2,7 @@ add_library(
     DeePCpp STATIC
     algorithm.h
     algorithm.cpp
+    deepc.h
     lti.h
     lti.cpp
 )
