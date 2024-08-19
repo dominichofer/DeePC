@@ -1,5 +1,6 @@
 #include "algorithm.h"
 #include <cassert>
+#include <vector>
 
 VectorXd concat(const VectorXd& l, const VectorXd& r)
 {
@@ -27,11 +28,14 @@ MatrixXd vstack(const MatrixXd& upper, const MatrixXd& middle, const MatrixXd& l
     return res;
 }
 
-MatrixXd HankelMatrix(int rows, const VectorXd& vec)
+MatrixXd HankelMatrix(int rows, const std::vector<VectorXd>& vec)
 {
-    MatrixXd res(rows, vec.size() - rows + 1);
+    int dims = vec.front().size();
+    MatrixXd res(rows * dims, vec.size() - rows + 1);
     for (int i = 0; i < rows; ++i)
-        res.row(i) = vec.segment(i, vec.size() - rows + 1);
+        for (int j = 0; j < dims; ++j)
+            for (int k = 0; k < vec.size() - rows + 1; ++k)
+                res(i * dims + j, k) = vec[k + i](j);
     return res;
 }
 

@@ -9,7 +9,8 @@ VectorXd concat(const VectorXd&, const VectorXd&);
 MatrixXd vstack(const MatrixXd&, const MatrixXd&);
 MatrixXd vstack(const MatrixXd&, const MatrixXd&, const MatrixXd&);
 
-MatrixXd HankelMatrix(int rows, const VectorXd&);
+// Returns a generalized Hankel matrix with one row per dimension of the input vectors.
+MatrixXd HankelMatrix(int rows, const std::vector<VectorXd>&);
 
 VectorXd projected_gradient_method(
     const MatrixXd& mat,
