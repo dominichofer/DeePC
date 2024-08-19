@@ -36,45 +36,87 @@ TEST(Algorithm, Vstack3)
 	EXPECT_EQ(res, Vector(1, 2, 3, 4, 5, 6));
 }
 
-TEST(HankelMatrix, Size_1_and_1_row)
+TEST(HankelMatrix_1D_data, Size_1_and_1_row)
 {
-	auto res = HankelMatrix(1, Vector(1));
+	auto res = HankelMatrix(1, Vectors({1}));
 	auto expected = Matrix({1});
 	EXPECT_EQ(res, expected);
 }
 
-TEST(HankelMatrix, Size_2_and_1_row)
+TEST(HankelMatrix_1D_data, Size_2_and_1_row)
 {
-	auto res = HankelMatrix(1, Vector(1, 2));
+	auto res = HankelMatrix(1, Vectors({1}, {2}));
 	auto expected = Matrix({1, 2});
 	EXPECT_EQ(res, expected);
 }
 
-TEST(HankelMatrix, Size_2_and_2_row)
+TEST(HankelMatrix_1D_data, Size_2_and_2_row)
 {
-	auto res = HankelMatrix(2, Vector(1, 2));
+	auto res = HankelMatrix(2, Vectors({1}, {2}));
 	auto expected = Matrix({1}, {2});
 	EXPECT_EQ(res, expected);
 }
 
-TEST(HankelMatrix, Size_3_and_1_row)
+TEST(HankelMatrix_1D_data, Size_3_and_1_row)
 {
-	auto res = HankelMatrix(1, Vector(1, 2, 3));
+	auto res = HankelMatrix(1, Vectors({1}, {2}, {3}));
 	auto expected = Matrix({1, 2, 3});
 	EXPECT_EQ(res, expected);
 }
 
-TEST(HankelMatrix, Size_3_and_2_row)
+TEST(HankelMatrix_1D_data, Size_3_and_2_row)
 {
-	auto res = HankelMatrix(2, Vector(1, 2, 3));
+	auto res = HankelMatrix(2, Vectors({1}, {2}, {3}));
 	auto expected = Matrix({1, 2}, {2, 3});
 	EXPECT_EQ(res, expected);
 }
 
-TEST(HankelMatrix, Size_3_and_3_row)
+TEST(HankelMatrix_1D_data, Size_3_and_3_row)
 {
-	auto res = HankelMatrix(3, Vector(1, 2, 3));
+	auto res = HankelMatrix(3, Vectors({1}, {2}, {3}));
 	auto expected = Matrix({1}, {2}, {3});
+	EXPECT_EQ(res, expected);
+}
+
+TEST(HankelMatrix_2D_data, Size_1_and_1_row)
+{
+	auto res = HankelMatrix(1, Vectors({1, 2}));
+	auto expected = Matrix({1}, {2});
+	EXPECT_EQ(res, expected);
+}
+
+TEST(HankelMatrix_2D_data, Size_2_and_1_row)
+{
+	auto res = HankelMatrix(1, Vectors({1, 2}, {3, 4}));
+	auto expected = Matrix({1, 3}, {2, 4});
+	EXPECT_EQ(res, expected);
+}
+
+TEST(HankelMatrix_2D_data, Size_2_and_2_row)
+{
+	auto res = HankelMatrix(2, Vectors({1, 2}, {3, 4}));
+	auto expected = Matrix({1}, {2}, {3}, {4});
+	EXPECT_EQ(res, expected);
+}
+
+TEST(HankelMatrix_2D_data, Size_3_and_1_row)
+{
+	auto res = HankelMatrix(1, Vectors({1, 2}, {3, 4}, {5, 6}));
+	auto expected = Matrix({1, 3, 5}, {2, 4, 6});
+	EXPECT_EQ(res, expected);
+}
+
+TEST(HankelMatrix_2D_data, Size_3_and_2_row)
+{
+	auto res = HankelMatrix(2, Vectors({1, 2}, {3, 4}, {5, 6}));
+	auto expected = Matrix({1, 3}, {2, 4}, {3, 5}, {4, 6});
+	EXPECT_EQ(res, expected);
+}
+
+TEST(HankelMatrix_2D_data, Size_3_and_3_row)
+{
+	auto res = HankelMatrix(3, Vectors({1, 2}, {3, 4}, {5, 6}));
+	auto expected = Matrix({1}, {2}, {3}, {4}, {5}, {6});
 	EXPECT_EQ(res, expected);
 }
 
