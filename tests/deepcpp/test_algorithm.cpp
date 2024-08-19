@@ -5,7 +5,7 @@
 
 using Eigen::VectorXd;
 
-TEST(Algorithm, Concat)
+TEST(Algorithm, Concat_VectorXd)
 {
 	auto l = Vector(1, 2);
 	auto r = Vector(3, 4);
@@ -13,6 +13,16 @@ TEST(Algorithm, Concat)
 	auto res = concat(l, r);
 
 	EXPECT_EQ(res, Vector(1, 2, 3, 4));
+}
+
+TEST(Algorithm, Concat_std_vector_VectorXd)
+{
+	auto l = Vectors({1, 2}, {3, 4});
+	auto r = Vectors({5, 6}, {7, 8});
+
+	auto res = concat(l, r);
+
+	EXPECT_EQ(res, Vector(1, 2, 3, 4, 5, 6, 7, 8));
 }
 
 TEST(Algorithm, Vstack2)
