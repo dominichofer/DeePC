@@ -2,10 +2,44 @@
 #include <cassert>
 #include <vector>
 
+std::string to_string(const std::vector<VectorXd>& v)
+{
+    std::string s = "[";
+    for (const auto &x : v)
+    {
+        s += "[";
+        for (int i = 0; i < x.size(); ++i)
+        {
+            s += std::to_string(x(i));
+            if (i < x.size() - 1)
+                s += ", ";
+        }
+        s += "]";
+    }
+    s += "]";
+    return s;
+}
+
+VectorXd clamp(VectorXd v, double min, double max)
+{
+    for (int i = 0; i < v.size(); ++i)
+        v(i) = std::clamp(v(i), min, max);
+    return v;
+}
+
 VectorXd concat(const VectorXd& l, const VectorXd& r)
 {
     VectorXd res(l.size() + r.size());
     res << l, r;
+    return res;
+}
+
+VectorXd concat(const std::vector<VectorXd>& v)
+{
+    int size = v.front().size();
+    VectorXd res(v.size() * size);
+    for (int i = 0; i < v.size(); ++i)
+        res.segment(i * size, size) = v[i];
     return res;
 }
 
@@ -18,6 +52,15 @@ VectorXd concat(const std::vector<VectorXd>& l, const std::vector<VectorXd>& r)
         res.segment(i * l.front().size(), l.front().size()) = l[i];
         res.segment(i * r.front().size() + l.size() * l.front().size(), r.front().size()) = r[i];
     }
+    return res;
+}
+
+std::vector<VectorXd> split(const VectorXd& vec, int size)
+{
+    assert(vec.size() % size == 0);
+    std::vector<VectorXd> res(size);
+    for (int i = 0; i < size; ++i)
+        res[i] = vec.segment(i * vec.size() / size, vec.size() / size);
     return res;
 }
 
@@ -71,16 +114,15 @@ VectorXd projected_gradient_method(
     return x_old;
 }
 
-std::vector<VectorXd> linear_chirp(double f0, double f1, int samples, int phi)
+std::vector<double> linear_chirp(double f0, double f1, int samples, int phi)
 {
     double Pi = 3.14159265358979323846;
-    std::vector<VectorXd> res;
+    std::vector<double> res;
     res.reserve(samples);
     for (int i = 0; i < samples; ++i)
     {
-        double t = 1 / (samples - 1);
-        double phase = f0 * t + 0.5 * (f1 - f0) * t * t;
-        res.push_back(VectorXd::Constant(1, std::sin(phi + 2 * Pi * phase)));
+        double t = i / (samples - 1.0);
+        res.push_back(std::sin(phi + 2 * Pi * (f0 * t + 0.5 * (f1 - f0) * t * t)));
     }
     return res;
 }

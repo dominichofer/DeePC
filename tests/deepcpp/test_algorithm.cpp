@@ -5,12 +5,36 @@
 
 using Eigen::VectorXd;
 
+TEST(Algorithm, To_String)
+{
+	auto v = Vectors({1, 2}, {3, 4});
+	auto res = to_string(v);
+
+	EXPECT_EQ(res, "[[1.000000, 2.000000][3.000000, 4.000000]]");
+}
+
+TEST(Algorithm, Clamp)
+{
+	auto v = Vector(1, 2, 3, 4);
+	auto res = clamp(v, 2, 3);
+
+	EXPECT_EQ(res, Vector(2, 2, 3, 3));
+}
+
 TEST(Algorithm, Concat_VectorXd)
 {
 	auto l = Vector(1, 2);
 	auto r = Vector(3, 4);
 
 	auto res = concat(l, r);
+
+	EXPECT_EQ(res, Vector(1, 2, 3, 4));
+}
+
+TEST(Algorithm, Concat_std_vector)
+{
+	auto v = std::vector{Vector(1, 2), Vector(3, 4)};
+	auto res = concat(v);
 
 	EXPECT_EQ(res, Vector(1, 2, 3, 4));
 }
@@ -23,6 +47,14 @@ TEST(Algorithm, Concat_std_vector_VectorXd)
 	auto res = concat(l, r);
 
 	EXPECT_EQ(res, Vector(1, 2, 3, 4, 5, 6, 7, 8));
+}
+
+TEST(Algorithm, Split)
+{
+	auto vec = Vector(1, 2, 3, 4, 5, 6);
+	auto res = split(vec, 2);
+
+	EXPECT_EQ(res, Vectors({1, 2, 3}, {4, 5, 6}));
 }
 
 TEST(Algorithm, Vstack2)
@@ -151,13 +183,13 @@ TEST(LinearChirp, Size)
 TEST(LinearChirp, Start)
 {
 	auto chirp = linear_chirp(0, 100, 1'000);
-	EXPECT_EQ(chirp[0], Vector(0));
+	EXPECT_NEAR(chirp[0], 0, 1e-12);
 }
 
 TEST(LinearChirp, End)
 {
 	auto chirp = linear_chirp(0, 100, 1'000);
-	EXPECT_EQ(chirp[999], Vector(0));
+	EXPECT_NEAR(chirp[999], 0, 1e-12);
 }
 
 TEST(LinearChirp, Symmetry)
@@ -165,5 +197,5 @@ TEST(LinearChirp, Symmetry)
 	auto chirp1 = linear_chirp(0, 100, 1'000);
 	auto chirp2 = linear_chirp(100, 0, 1'000);
 	for (int i = 0; i < 1'000; ++i)
-		EXPECT_EQ(chirp1[i], -chirp2[999 - i]);
+		EXPECT_NEAR(chirp1[i], -chirp2[999 - i], 1e-12);
 }

@@ -136,7 +136,7 @@ TEST(DiscreteLTI, ApplyMultiple1D)
 
     std::vector<VectorXd> y = system.apply_multiple(std::vector{1.0, 2.0, 3.0});
 
-    std::vector<VectorXd> expected{Vector(7), Vector(18), Vector(41)};
+    auto expected = Vectors({7}, {18}, {41});
     EXPECT_EQ(y, expected);
 }
 
@@ -149,8 +149,8 @@ TEST(DiscreteLTI, ApplyMultiple2D)
         Matrix({1, 1}),
         Vector(1, 1));
 
-    std::vector<VectorXd> y = system.apply_multiple(std::vector{Vector(1, 1), Vector(2, 2)});
+    std::vector<VectorXd> y = system.apply_multiple(Vectors({1, 1}, {2, 2}));
 
-    std::vector<VectorXd> expected{Vector(10), Vector(28)};
+    auto expected = Vectors({10}, {28});
     EXPECT_EQ(y, expected);
 }

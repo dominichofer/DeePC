@@ -56,6 +56,7 @@ VectorXd DiscreteLTI::apply(double u)
 VectorXd DiscreteLTI::apply(const VectorXd& u)
 {
     assert(u.size() == B.cols());
+    assert(u.size() == D.cols());
 
     x = A * x + B * u;
     return C * x + D * u;
