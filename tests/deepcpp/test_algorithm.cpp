@@ -5,6 +5,22 @@
 
 using Eigen::VectorXd;
 
+TEST(Algorithm, To_String)
+{
+	auto v = Vectors({1, 2}, {3, 4});
+	auto res = to_string(v);
+
+	EXPECT_EQ(res, "[[1, 2][3, 4]]");
+}
+
+TEST(Algorithm, Clamp)
+{
+	auto v = Vector(1, 2, 3, 4);
+	auto res = clamp(v, 2, 3);
+
+	EXPECT_EQ(res, Vector(2, 2, 3, 3));
+}
+
 TEST(Algorithm, Concat_VectorXd)
 {
 	auto l = Vector(1, 2);
@@ -31,6 +47,14 @@ TEST(Algorithm, Concat_std_vector_VectorXd)
 	auto res = concat(l, r);
 
 	EXPECT_EQ(res, Vector(1, 2, 3, 4, 5, 6, 7, 8));
+}
+
+TEST(Algorithm, Split)
+{
+	auto vec = Vector(1, 2, 3, 4, 5, 6);
+	auto res = split(vec, 2);
+
+	EXPECT_EQ(res, Vectors({1, 2, 3}, {4, 5, 6}));
 }
 
 TEST(Algorithm, Vstack2)

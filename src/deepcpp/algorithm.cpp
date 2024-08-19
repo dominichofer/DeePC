@@ -2,6 +2,31 @@
 #include <cassert>
 #include <vector>
 
+std::string to_string(const std::vector<VectorXd>& v)
+{
+    std::string s = "[";
+    for (const auto &x : v)
+    {
+        s += "[";
+        for (int i = 0; i < x.size(); ++i)
+        {
+            s += std::to_string(x(i));
+            if (i < x.size() - 1)
+                s += ", ";
+        }
+        s += "]";
+    }
+    s += "]";
+    return s;
+}
+
+VectorXd clamp(VectorXd v, double min, double max)
+{
+    for (int i = 0; i < v.size(); ++i)
+        v(i) = std::clamp(v(i), min, max);
+    return v;
+}
+
 VectorXd concat(const VectorXd& l, const VectorXd& r)
 {
     VectorXd res(l.size() + r.size());
@@ -27,6 +52,15 @@ VectorXd concat(const std::vector<VectorXd>& l, const std::vector<VectorXd>& r)
         res.segment(i * l.front().size(), l.front().size()) = l[i];
         res.segment(i * r.front().size() + l.size() * l.front().size(), r.front().size()) = r[i];
     }
+    return res;
+}
+
+std::vector<VectorXd> split(const VectorXd& vec, int size)
+{
+    assert(vec.size() % size == 0);
+    std::vector<VectorXd> res(size);
+    for (int i = 0; i < size; ++i)
+        res[i] = vec.segment(i * vec.size() / size, vec.size() / size);
     return res;
 }
 
