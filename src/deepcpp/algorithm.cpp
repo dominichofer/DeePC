@@ -9,6 +9,18 @@ VectorXd concat(const VectorXd& l, const VectorXd& r)
     return res;
 }
 
+VectorXd concat(const std::vector<VectorXd>& l, const std::vector<VectorXd>& r)
+{
+    assert(l.size() == r.size());
+    VectorXd res(l.size() * l.front().size() + r.size() * r.front().size());
+    for (int i = 0; i < l.size(); ++i)
+    {
+        res.segment(i * l.front().size(), l.front().size()) = l[i];
+        res.segment(i * r.front().size() + l.size() * l.front().size(), r.front().size()) = r[i];
+    }
+    return res;
+}
+
 MatrixXd vstack(const MatrixXd& upper, const MatrixXd& lower)
 {
     assert(upper.cols() == lower.cols());
