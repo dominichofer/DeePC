@@ -11,6 +11,7 @@ class DiscreteLTI
     MatrixXd A, B, C, D;
     VectorXd x;
 public:
+    DiscreteLTI() = default;
     DiscreteLTI(MatrixXd A, MatrixXd B, MatrixXd C, MatrixXd D, VectorXd x) noexcept
         : A(std::move(A)), B(std::move(B)), C(std::move(C)), D(std::move(D)), x(std::move(x)) {}
 
