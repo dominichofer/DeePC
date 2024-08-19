@@ -62,7 +62,7 @@ std::vector<VectorXd> linear_chirp(double f0, double f1, int samples, int phi)
     res.reserve(samples);
     for (int i = 0; i < samples; ++i)
     {
-        double t = 2 * Pi / (samples - 1);
+        double t = 1 / (samples - 1);
         double phase = f0 * t + 0.5 * (f1 - f0) * t * t;
         res.push_back(VectorXd::Constant(1, std::sin(phi + 2 * Pi * phase)));
     }
