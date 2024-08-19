@@ -183,13 +183,13 @@ TEST(LinearChirp, Size)
 TEST(LinearChirp, Start)
 {
 	auto chirp = linear_chirp(0, 100, 1'000);
-	EXPECT_EQ(chirp[0], Vector(0));
+	EXPECT_NEAR(chirp[0], 0, 1e-12);
 }
 
 TEST(LinearChirp, End)
 {
 	auto chirp = linear_chirp(0, 100, 1'000);
-	EXPECT_EQ(chirp[999], Vector(0));
+	EXPECT_NEAR(chirp[999], 0, 1e-12);
 }
 
 TEST(LinearChirp, Symmetry)
@@ -197,5 +197,5 @@ TEST(LinearChirp, Symmetry)
 	auto chirp1 = linear_chirp(0, 100, 1'000);
 	auto chirp2 = linear_chirp(100, 0, 1'000);
 	for (int i = 0; i < 1'000; ++i)
-		EXPECT_EQ(chirp1[i], -chirp2[999 - i]);
+		EXPECT_NEAR(chirp1[i], -chirp2[999 - i], 1e-12);
 }

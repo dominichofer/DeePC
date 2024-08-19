@@ -114,16 +114,15 @@ VectorXd projected_gradient_method(
     return x_old;
 }
 
-std::vector<VectorXd> linear_chirp(double f0, double f1, int samples, int phi)
+std::vector<double> linear_chirp(double f0, double f1, int samples, int phi)
 {
     double Pi = 3.14159265358979323846;
-    std::vector<VectorXd> res;
+    std::vector<double> res;
     res.reserve(samples);
     for (int i = 0; i < samples; ++i)
     {
-        double t = 1 / (samples - 1);
-        double phase = f0 * t + 0.5 * (f1 - f0) * t * t;
-        res.push_back(VectorXd::Constant(1, std::sin(phi + 2 * Pi * phase)));
+        double t = i / (samples - 1.0);
+        res.push_back(std::sin(phi + 2 * Pi * (f0 * t + 0.5 * (f1 - f0) * t * t)));
     }
     return res;
 }

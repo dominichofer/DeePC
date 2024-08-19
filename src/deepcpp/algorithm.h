@@ -33,4 +33,4 @@ VectorXd projected_gradient_method(
     double tolerance = 1e-6);
 
 
-std::vector<VectorXd> linear_chirp(double f0, double f1, int samples, int phi = 0);
+std::vector<double> linear_chirp(double f0, double f1, int samples, int phi = 0);
