@@ -79,6 +79,7 @@ class DiscreteLTI:
             u = np.array(list(u))
 
         assert u.shape[0] == self.B.shape[1]
+        assert u.shape[0] == self.D.shape[1]
 
         self.x = self.A @ self.x + self.B @ u
         y = self.C @ self.x + self.D @ u
