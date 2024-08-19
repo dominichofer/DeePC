@@ -15,6 +15,14 @@ TEST(Algorithm, Concat_VectorXd)
 	EXPECT_EQ(res, Vector(1, 2, 3, 4));
 }
 
+TEST(Algorithm, Concat_std_vector)
+{
+	auto v = std::vector{Vector(1, 2), Vector(3, 4)};
+	auto res = concat(v);
+
+	EXPECT_EQ(res, Vector(1, 2, 3, 4));
+}
+
 TEST(Algorithm, Concat_std_vector_VectorXd)
 {
 	auto l = Vectors({1, 2}, {3, 4});

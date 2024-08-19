@@ -9,6 +9,15 @@ VectorXd concat(const VectorXd& l, const VectorXd& r)
     return res;
 }
 
+VectorXd concat(const std::vector<VectorXd>& v)
+{
+    int size = v.front().size();
+    VectorXd res(v.size() * size);
+    for (int i = 0; i < v.size(); ++i)
+        res.segment(i * size, size) = v[i];
+    return res;
+}
+
 VectorXd concat(const std::vector<VectorXd>& l, const std::vector<VectorXd>& r)
 {
     assert(l.size() == r.size());

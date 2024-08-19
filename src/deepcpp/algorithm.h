@@ -7,6 +7,7 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
 VectorXd concat(const VectorXd&, const VectorXd&);
+VectorXd concat(const std::vector<VectorXd>&);
 VectorXd concat(const std::vector<VectorXd>&, const std::vector<VectorXd>&);
 MatrixXd vstack(const MatrixXd&, const MatrixXd&);
 MatrixXd vstack(const MatrixXd&, const MatrixXd&, const MatrixXd&);
