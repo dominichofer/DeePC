@@ -1,119 +1,70 @@
 #include "algorithm.h"
 #include <cassert>
-#include <cmath>
 
-DenseMatrix inv(const Matrix& m)
+VectorXd concat(const VectorXd& l, const VectorXd& r)
 {
-    assert(m.rows() == m.cols());
-    int n = m.rows();
-
-    auto result = DenseMatrix::Zeros(n, n);
-    for (int i = 0; i < n; ++i)
-        result(i, i) = 1;
-    
-    // Gauss-Jordan elimination with full pivoting
-    auto a = DenseMatrix(m);
-    for (int i = 0; i < n; ++i)
-    {
-        double pivot = a(i, i);
-        for (int j = 0; j < n; ++j)
-        {
-            a(i, j) /= pivot;
-            result(i, j) /= pivot;
-        }
-        for (int j = 0; j < n; ++j)
-        {
-            if (j == i)
-                continue;
-            double factor = a(j, i);
-            for (int k = 0; k < n; ++k)
-            {
-                a(j, k) -= factor * a(i, k);
-                result(j, k) -= factor * result(i, k);
-            }
-        }
-    }
+    VectorXd res(l.size() + r.size());
+    res << l, r;
+    return res;
 }
 
-double norm(const Matrix& m)
+MatrixXd vstack(const MatrixXd& upper, const MatrixXd& lower)
 {
-    double sum = 0;
-    for (int i = 0; i < m.rows(); ++i)
-    {
-        double sub_sum = 0; // Increases numerical accuracy
-        for (int j = 0; j < m.cols(); ++j)
-            sub_sum += m(i, j) * m(i, j);
-        sum += sub_sum;
-    }
-    return std::sqrt(sum);
+    assert(upper.cols() == lower.cols());
+
+    MatrixXd res(upper.rows() + lower.rows(), upper.cols());
+    res << upper, lower;
+    return res;
 }
 
-int matrix_rank(const Matrix& m)
+MatrixXd vstack(const MatrixXd& upper, const MatrixXd& middle, const MatrixXd& lower)
 {
-    auto [u, s, v] = singular_value_decomposition(m);
-    int rank = 0;
-    for (int i = 0; i < s.rows(); ++i)
-        if (s(i, i) > 1e-6)
-            ++rank;
-    return rank;    
+    assert(upper.cols() == middle.cols());
+    assert(upper.cols() == lower.cols());
+
+    MatrixXd res(upper.rows() + middle.rows() + lower.rows(), upper.cols());
+    res << upper, middle, lower;
+    return res;
 }
 
-std::tuple<DenseMatrix, DenseMatrix, DenseMatrix> singular_value_decomposition(const Matrix& m)
+MatrixXd HankelMatrix(int rows, const VectorXd& vec)
 {
-    int rows = m.rows();
-    int cols = m.cols();
-    auto mt = TransposedMatrix(m);
-    auto mtm = mt * m;
-    auto mmt = m * mt;
-    auto mtm_eigen = inv(mtm);
-    auto mmt_eigen = inv(mmt);
-    auto u = m * mtm_eigen;
-    auto v = mt * mmt_eigen;
-    auto s = DenseMatrix::Zeros(rows, cols);
-    for (int i = 0; i < std::min(rows, cols); ++i)
-        s(i, i) = std::sqrt(mtm(i, i));
-    return {u, s, v};
+    MatrixXd res(rows, vec.size() - rows + 1);
+    for (int i = 0; i < rows; ++i)
+        res.row(i) = vec.segment(i, vec.size() - rows + 1);
+    return res;
 }
 
-DenseMatrix pseudoinverse(const Matrix& m)
-{
-    auto [u, s, v] = singular_value_decomposition(m);
-    return v * inv(s) * u;
-}
-
-DenseMatrix left_pseudoinverse(const Matrix& m)
-{
-    auto mt = TransposedMatrix(m);
-    return inv(mt * m) * mt;
-}
-
-DenseMatrix right_pseudoinverse(const Matrix& m)
-{
-    auto mt = TransposedMatrix(m);
-    return mt * inv(m * mt);
-}
-
-std::vector<double> solve(const Matrix& a, const std::vector<double>& b)
-{
-    return inv(a) * b;
-}
-
-std::vector<double> projected_gradient_method(
-    const Matrix& mat,
-    const std::vector<double>& x_ini,
-    const std::vector<double>& target,
-    std::function<std::vector<double>(const std::vector<double>&)> constrain,
+VectorXd projected_gradient_method(
+    const MatrixXd& mat,
+    const VectorXd& initial_guess,
+    const VectorXd& target,
+    std::function<VectorXd(const VectorXd&)> projection,
     int max_iterations,
     double tolerance)
 {
-    double step_size = 1 / norm(mat);
-    std::vector<double> x_old = constrain(target);
+    double step_size = 1 / mat.norm();
+    VectorXd x_old = projection(target);
     for (int i = 0; i < max_iterations; ++i)
     {
-        std::vector<double> x_new = constrain(x_old - step_size * (mat * x_old - target));
-        if (norm(x_new - x_old) < tolerance)
+        VectorXd x_new = projection(x_old - step_size * (mat * x_old - target));
+        if ((x_new - x_old).norm() < tolerance)
             return x_new;
         x_old = x_new;
     }
     return x_old;
+}
+
+std::vector<VectorXd> linear_chirp(double f0, double f1, int samples, int phi)
+{
+    double Pi = 3.14159265358979323846;
+    std::vector<VectorXd> res;
+    res.reserve(samples);
+    for (int i = 0; i < samples; ++i)
+    {
+        double t = 1 / (samples - 1);
+        double phase = f0 * t + 0.5 * (f1 - f0) * t * t;
+        res.push_back(VectorXd::Constant(1, std::sin(phi + 2 * Pi * phase)));
+    }
+    return res;
 }

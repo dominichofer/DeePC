@@ -1,28 +1,23 @@
-#include "matrix.h"
-#include "vector.h"
+#pragma once
+#include <Eigen/Dense>
 #include <functional>
-#include <tuple>
-#include <vector>
 
-DenseMatrix inv(const Matrix&);
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 
-double norm(const Matrix&);
+VectorXd concat(const VectorXd&, const VectorXd&);
+MatrixXd vstack(const MatrixXd&, const MatrixXd&);
+MatrixXd vstack(const MatrixXd&, const MatrixXd&, const MatrixXd&);
 
-// Returns matrix rank using SVD method
-int matrix_rank(const Matrix&);
+MatrixXd HankelMatrix(int rows, const VectorXd&);
 
-auto singular_value_decomposition(const Matrix&) -> std::tuple<DenseMatrix, DenseMatrix, DenseMatrix>;
-
-DenseMatrix pseudoinverse(const Matrix&);
-DenseMatrix left_pseudoinverse(const Matrix&);
-DenseMatrix right_pseudoinverse(const Matrix&);
-
-std::vector<double> solve(const Matrix&, const std::vector<double>&);
-
-std::vector<double> projected_gradient_method(
-    const Matrix& mat,
-    const std::vector<double>& x_ini,
-    const std::vector<double>& target,
-    std::function<std::vector<double>(const std::vector<double>&)> constrain,
+VectorXd projected_gradient_method(
+    const MatrixXd& mat,
+    const VectorXd& initial_guess,
+    const VectorXd& target,
+    std::function<VectorXd(const VectorXd&)> projection,
     int max_iterations = 300,
     double tolerance = 1e-6);
+
+
+std::vector<VectorXd> linear_chirp(double f0, double f1, int samples, int phi = 0);
