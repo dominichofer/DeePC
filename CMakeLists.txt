@@ -15,13 +15,31 @@ endif()
 
 include(FetchContent)
 
+find_package (Eigen3 3.4 NO_MODULE)
+ 
+# Eigen
+if (NOT TARGET Eigen3::Eigen)
+        FetchContent_Declare(
+                Eigen
+                GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+                GIT_TAG 3.4.0
+                GIT_SHALLOW TRUE
+                GIT_PROGRESS TRUE
+        )
+        set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+        set(EIGEN_BUILD_TESTING OFF)
+        set(EIGEN_BUILD_DOC OFF)
+        set(EIGEN_BUILD_PKGCONFIG OFF)
+        FetchContent_MakeAvailable(Eigen)
+endif (NOT TARGET Eigen3::Eigen)
+
 # Google Test
 FetchContent_Declare(googletest
         GIT_REPOSITORY https://github.com/google/googletest.git
         GIT_TAG v1.15.2
 )
 FetchContent_MakeAvailable(googletest)
-set(BENCHMARK_ENABLE_GTEST_TESTS "OFF")
+set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
