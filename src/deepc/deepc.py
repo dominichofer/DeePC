@@ -219,6 +219,12 @@ class Controller:
         Y_p = Y[: T_ini * y_ndim, :]  # past
         Y_f = Y[T_ini * y_ndim :, :]  # future
 
+        print(Y_f)
+        print(Y_p)
+        print(U_f)
+        print(U_p)
+        print(T_ini, r_len, u_d, y_d)
+
         # Now solving
         # minimize: ||y - r||_Q^2 + ||u||_R^2
         # subject to: [U_p; Y_p; U_f; Y_f] * g = [u_ini; y_ini; u; y]
@@ -260,17 +266,29 @@ class Controller:
         Wp = np.vstack([U_p, Y_p])
 
         # 2. QR Decomposition
-        Q, R = np.linalg.qr(Wp)
+        Q, R = np.linalg.qr(Wp) 
+
+        R_lower_triag = np.flipud(np.fliplr(R)).T  # This will be lower triangular 
+        # (R_lower@Q.T).T = Wp
 
         # 3. Projection of future outputs
-        Pi = Q.T @ np.vstack([U_f,Y_f])
+        Wf = np.vstack([U_f,Y_f])
+        #Pi = Q @ Wf.T # currently "wrong " but simply fitting dims
 
         # 4. SVD on the projection matrix
-        U, Sigma, VT = np.linalg.svd(Pi, full_matrices=False)
+        #U, Sigma, VT = np.linalg.svd(Pi) #full_matrices=False
+        U, Sigma, VT = np.linalg.svd(R[-2:,-2:]) #full_matrices=False
+        
 
         # 5. State sequence (r is the guessed system order)
-        r = 3
+        r = 2
         X = np.sqrt(Sigma[:r])[:, np.newaxis] * VT[:r, :]  # Reshape X to ensure it has 2D structure
+
+        #data assumptions
+        assert matrix_rank(X) == r
+        #todo persistently exciting ramk(u_d.n_dim*k ) = rank Up
+        #assert matrix_rank(U_p) == u_d.ndim*r_len
+
 
         # 6. Estimate C
         C = U[:, :r]
@@ -282,7 +300,6 @@ class Controller:
         B = np.linalg.lstsq(U_p.T, X.T, rcond=None)[0].T
 
         print(" B " , B)
-
 
         print(" A " , A )
 
