@@ -89,3 +89,14 @@ inline std::vector<VectorXd> Vectors(std::initializer_list<double> vec1, std::in
 {
     return {VectorXd::Map(vec1.begin(), vec1.size()), VectorXd::Map(vec2.begin(), vec2.size()), VectorXd::Map(vec3.begin(), vec3.size())};
 }
+
+template <typename... Args>
+std::vector<VectorXd> Vectors(Args... args)
+{
+    static_assert((std::is_arithmetic_v<Args> && ...), "All arguments must be numeric types");
+
+    std::vector<VectorXd> vecs;
+    vecs.reserve(sizeof...(args));
+    ((vecs.push_back(VectorXd::Constant(1, args)), ...)); // Fold expression to unpack arguments
+    return vecs;
+}

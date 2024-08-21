@@ -164,3 +164,47 @@ TEST_F(Test_deePC_2D_input_3D_output, Constrained)
     std::vector<VectorXd> y_star = system.apply_multiple(u_star);
     expect_near(y_star, r, 0.05);
 }
+
+TEST(Test_deePC_simple_system, 1D_input_1D_output)
+{
+    std::vector<VectorXd> u_star = deePC(
+        Vectors(1, 2, 3, 4, -5, 6, 7, 8, 9, 10),
+        Vectors(1, 2, 3, 4, -5, 6, 7, 8, 9, 10),
+        Vectors(2),
+        Vectors(2),
+        Vectors(4));
+
+    expect_near(u_star, Vectors(4), 1e-5);
+}
+
+TEST(Test_deePC_simple_system, 1D_input_1D_output_3_targets)
+{
+    std::vector<VectorXd> u_star = deePC(
+        Vectors(1, 2, 3, 4, -5, 6, 7, 8, 9, 10),
+        Vectors(1, 2, 3, 4, -5, 6, 7, 8, 9, 10),
+        Vectors(2),
+        Vectors(2),
+        Vectors(4, 4, 4));
+
+    expect_near(u_star, Vectors(4, 4, 4), 1e-5);
+}
+
+TEST(Test_deePC_simple_system, 2D_input_3D_output)
+{
+    std::vector<VectorXd> u_d, y_d, u_ini, y_ini, u, r;
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 3; j++)
+            u_d.push_back(Vector(i, j));
+    for (const VectorXd &u : u_d)
+        y_d.push_back(Vector(u(0), u(1), u(0) + u(1)));
+    u_ini = Vectors({2, 2});
+    for (const VectorXd &u : u_ini)
+        y_ini.push_back(Vector(u(0), u(1), u(0) + u(1)));
+    u = Vectors({1, 3});
+    for (const VectorXd &u : u)
+        r.push_back(Vector(u(0), u(1), u(0) + u(1)));
+
+    auto u_star = deePC(u_d, y_d, u_ini, y_ini, r);
+
+    expect_near(u_star, u, 1e-5);
+}
