@@ -3,6 +3,11 @@ from typing import Callable
 import numpy as np
 from .math import hankel_matrix, projected_gradient_method
 
+def convert_to_column_vector(v: list | np.ndarray) -> np.ndarray:
+    v = np.array(v)
+    if v.ndim == 1:
+        return v.reshape(-1, 1)
+    return v
 
 def deePC(
     u_d: list | np.ndarray,
@@ -15,7 +20,7 @@ def deePC(
     control_constrain_fkt: Callable | None = None,
     max_pgm_iterations=300,
     pgm_tolerance=1e-6,
-) -> list[float]:
+) -> np.ndarray:
     """
     Returns the optimal control for a given system and reference trajectory.
     According to the paper Data-Enabled Predictive Control: In the Shallows of the DeePC
@@ -33,49 +38,45 @@ def deePC(
                             used to solve the constrained optimization problem.
         pgm_tolerance: Tolerance for the PGM algorithm.
     """
-    u_d = np.array(u_d)
-    u_is_1d = u_d.ndim == 1
-    if u_d.ndim == 1:
-        u_d = u_d.reshape(-1, 1)
-    y_d = np.array(y_d)
-    if y_d.ndim == 1:
-        y_d = y_d.reshape(-1, 1)
-    u_ini = np.array(u_ini)
-    if u_ini.ndim == 1:
-        u_ini = u_ini.reshape(-1, 1)
-    y_ini = np.array(y_ini)
-    if y_ini.ndim == 1:
-        y_ini = y_ini.reshape(-1, 1)
-    r = np.array(r)
-    if r.ndim == 1:
-        r = r.reshape(-1, 1)
+    u_d = convert_to_column_vector(u_d)
+    y_d = convert_to_column_vector(y_d)
+    u_ini = convert_to_column_vector(u_ini)
+    y_ini = convert_to_column_vector(y_ini)
+    r = convert_to_column_vector(r)
 
-    assert len(u_d) == len(y_d), "u_d and y_d must have the same length."
-    assert len(u_ini) == len(y_ini), "u_ini and y_ini must have the same length."
-    assert u_d.shape[1] == u_ini.shape[1], "Elements of u_d and u_ini must have the same dimension."
-    assert y_d.shape[1] == y_ini.shape[1] == r.shape[1], "Elements of y_d, y_ini, and r must have the same dimension."
-
+    offline_size = len(u_d)
     T_ini = len(u_ini)
-    r_len = len(r)
-    u_ndim = u_d.shape[1] if u_d.ndim == 2 else 1
-    y_ndim = y_d.shape[1] if y_d.ndim == 2 else 1
+    target_size = len(r)
+    input_dims = u_d.shape[1]
+    output_dims = y_d.shape[1]
 
-    # Transform to column vectors
-    r = r.reshape(-1, 1)
-    u_ini = u_ini.reshape(-1, 1)
-    y_ini = y_ini.reshape(-1, 1)
+    assert u_d.shape == (offline_size, input_dims), f"{u_d.shape=} but should be ({offline_size}, {input_dims})."
+    assert y_d.shape == (offline_size, output_dims), f"{y_d.shape=} but should be ({offline_size}, {output_dims})."
+    assert u_ini.shape == (T_ini, input_dims), f"{u_ini.shape=} but should be ({T_ini}, {input_dims})."
+    assert y_ini.shape == (T_ini, output_dims), f"{y_ini.shape=} but should be ({T_ini}, {output_dims})."
+    assert r.shape == (target_size, output_dims), f"{r.shape=} but should be ({target_size}, {output_dims})."
 
+    Q_size = target_size * output_dims
     if Q is None:
-        Q = np.eye(r_len * y_ndim)
-    if R is None:
-        R = np.zeros((r_len * u_ndim, r_len * u_ndim))
+        Q = np.eye(Q_size)
+    assert Q.shape == (Q_size, Q_size), f"{Q.shape=} but should be ({Q_size}, {Q_size})."
 
-    U = hankel_matrix(T_ini + r_len, u_d)
-    U_p = U[: T_ini * u_ndim, :]  # past
-    U_f = U[T_ini * u_ndim :, :]  # future
-    Y = hankel_matrix(T_ini + r_len, y_d)
-    Y_p = Y[: T_ini * y_ndim, :]  # past
-    Y_f = Y[T_ini * y_ndim :, :]  # future
+    R_size = target_size * input_dims
+    if R is None:
+        R = np.zeros((R_size, R_size))
+    assert R.shape == (R_size, R_size), f"{R.shape=} but should be ({R_size}, {R_size})."
+
+    # Flatten
+    u_ini = np.concatenate(u_ini).reshape(-1, 1)
+    y_ini = np.concatenate(y_ini).reshape(-1, 1)
+    r = np.concatenate(r).reshape(-1, 1)
+
+    U = hankel_matrix(T_ini + target_size, u_d)
+    U_p = U[: T_ini * input_dims, :]  # past
+    U_f = U[T_ini * input_dims :, :]  # future
+    Y = hankel_matrix(T_ini + target_size, y_d)
+    Y_p = Y[: T_ini * output_dims, :]  # past
+    Y_f = Y[T_ini * output_dims :, :]  # future
 
     # Now solving
     # minimize: ||y - r||_Q^2 + ||u||_R^2
@@ -115,11 +116,7 @@ def deePC(
     if control_constrain_fkt is not None:
         u_star = projected_gradient_method(G, u_star, w, control_constrain_fkt, max_pgm_iterations, pgm_tolerance)
 
-    if u_is_1d:
-        u_star = u_star[:, 0]
-    else:
-        u_star = u_star.reshape(-1, u_d.shape[1])
-    return u_star.tolist()
+    return u_star.reshape(-1, input_dims)
 
 
 class Controller:
