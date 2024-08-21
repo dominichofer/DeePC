@@ -79,21 +79,21 @@ class TestHankelMatrix_2D_data(unittest.TestCase):
 
 class TestLinearChirp(unittest.TestCase):
     def test_len(self):
-        signal = linear_chirp(100, 0, 1000)
-        self.assertEqual(len(signal), 1000)
+        chirp = linear_chirp(0, 100, 1000)
+        self.assertEqual(len(chirp), 1000)
 
     def test_start(self):
-        signal = linear_chirp(100, 0, 1000)
-        self.assertAlmostEqual(signal[0], 0)
+        chirp = linear_chirp(0, 100, 1000)
+        self.assertAlmostEqual(chirp[0], 0)
 
     def test_end(self):
-        signal = linear_chirp(100, 0, 1000)
-        self.assertAlmostEqual(signal[-1], 0)
+        chirp = linear_chirp(0, 100, 1000)
+        self.assertAlmostEqual(chirp[-1], 0)
 
     def test_symmetry(self):
-        signal1 = linear_chirp(100, 0, 1000)
-        signal2 = [-x for x in reversed(linear_chirp(0, 100, 1000))]
-        np.testing.assert_allclose(signal1, signal2, atol=1e-12)
+        chirp1 = linear_chirp(0, 100, 1_000)
+        chirp2 = [-x for x in reversed(linear_chirp(100, 0, 1_000))]
+        np.testing.assert_allclose(chirp1, chirp2, atol=1e-12)
 
 
 if __name__ == "__main__":

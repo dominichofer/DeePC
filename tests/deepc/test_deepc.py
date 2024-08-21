@@ -38,10 +38,11 @@ def lti_2D_input_3D_output() -> DiscreteLTI:
 
 
 def gather_offline_data(system: DiscreteLTI) -> tuple:
+    SAMPLES = 1_000
     if system.input_dim == 1:
-        u_d = linear_chirp(0, 500, 1000)
+        u_d = linear_chirp(0, SAMPLES / 2, SAMPLES)
     else:
-        chirps = [linear_chirp(0, 500, 1000, 0.1 * i) for i in range(system.input_dim)]
+        chirps = [linear_chirp(0, SAMPLES / 2, SAMPLES, 0.1 * i) for i in range(system.input_dim)]
         u_d = list(zip(*chirps))  # Transpose the list of chirp signals
     y_d = system.apply_multiple(u_d)
     return u_d, y_d

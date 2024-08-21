@@ -6,7 +6,8 @@ This is a Python library and a C++ library that implement DeePC from the paper<b
 [https://arxiv.org/pdf/1811.05890](https://arxiv.org/pdf/1811.05890)
 
 ## Requirements
-For the Python library, at least Python 3.10 and numpy are required.
+The Python library requires at least Python 3.10 and pip. It installs numpy through pip.
+The C++ library requires a C++ compiler, cmake, and make. It installs Eigen, Google Test, and Google Benchmark through cmake.
 
 ## Installation
 To install the Python package `deepc`, run `pip install .`. It installs the package and all its dependencies.<br>

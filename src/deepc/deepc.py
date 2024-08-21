@@ -121,8 +121,8 @@ def deePC(
     # subject to: M_u * u = y - M_x * x
 
     G = M_u.T @ Q @ M_u + R
-    w = M_u.T @ Q @ (r - M_x @ x) + R @ u_0
-    u_star = np.linalg.solve(G, w)
+    w = M_u.T @ Q @ (r - M_x @ x)
+    u_star = np.linalg.lstsq(G, w)[0]
 
     if control_constrain_fkt is not None:
         u_star = projected_gradient_method(G, u_star, w, control_constrain_fkt, max_pgm_iterations, pgm_tolerance)
@@ -293,21 +293,10 @@ class Controller:
        
         # Transform to column vectors
         r = np.array(r).reshape(-1, 1)
-        u_0 = u_0.reshape(-1, 1)
-        u_0_expanded = np.tile(u_0, self.r_len).reshape(-1,1)
 
-        assert len(u_0_expanded) == len(r), "u_0 and input dim must have the same length."
-
-
-        #found a bug in yini (local reshape, because else the check isinitialized fails)
-        u_ini = [u.reshape(-1) for u in self.u_ini]
-        y_ini = [y.reshape(-1) for y in self.y_ini]
-
-        x = np.concatenate([u_ini, y_ini]).reshape(-1, 1)
-
-        w = self.M_u.T @ self.Q @ (r - self.M_x @ x) + self.R @ u_0_expanded
-
-        u_star = np.linalg.solve(self.G, w)
+        x = np.concatenate([self.u_ini, self.y_ini]).reshape(-1, 1)
+        w = self.M_u.T @ self.Q @ (r - self.M_x @ x)
+        u_star = np.linalg.lstsq(self.G, w)[0]
 
         if self.control_constrain_fkt is not None:
             u_star = projected_gradient_method(

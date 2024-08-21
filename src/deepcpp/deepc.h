@@ -1,10 +1,13 @@
+#pragma once
+#include <Eigen/Dense>
 #include "algorithm.h"
-#include "matrix.h"
-#include "vector.h"
 #include <cassert>
 #include <deque>
 #include <functional>
 #include <vector>
+
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 
 // Returns the optimal control for a given system and reference trajectory.
 // According to the paper Data-Enabled Predictive Control: In the Shallows of the DeePC
@@ -21,28 +24,30 @@
 //     max_pgm_iterations: Maximum number of iterations of the projected gradient method (PGM)
 //                         used to solve the constrained optimization problem.
 //     pgm_tolerance: Tolerance for the PGM algorithm.
-std::vector<double> deePC(
-    const std::vector<double>& u_d,
-    const std::vector<double>& y_d,
-    const std::vector<double>& u_ini,
-    const std::vector<double>& y_ini,
-    const std::vector<double>& r,
-    const IMatrix& Q,
-    const IMatrix& R,
-    std::function<std::vector<double>(const std::vector<double>&)> control_constrain_fkt = nullptr,
+inline std::vector<VectorXd> deePC(
+    const std::vector<VectorXd>& u_d,
+    const std::vector<VectorXd>& y_d,
+    const std::vector<VectorXd>& u_ini,
+    const std::vector<VectorXd>& y_ini,
+    const std::vector<VectorXd>& target_output,
+    const MatrixXd &Q,
+    const MatrixXd &R,
+    std::function<VectorXd(const VectorXd&)> control_constrain_fkt = nullptr,
     int max_pgm_iterations = 300,
     double pgm_tolerance = 1e-6)
 {
-    assert(u_d.size() == y_d.size(), "u_d and y_d must have the same size.");
-    assert(u_ini.size() == y_ini.size(), "u_ini and y_ini must have the same size.");
+    assert(u_d.size() == y_d.size());
+    assert(u_ini.size() == y_ini.size());
     int T_ini = u_ini.size();
 
-    auto U = HankelMatrix(u_d, T_ini + r.size());
-    auto U_p = SubMatrix(U, 0, T_ini, 0, U.cols()); // past
-    auto U_f = SubMatrix(U, T_ini, U.rows(), 0, U.cols()); // future
-    auto Y = HankelMatrix(y_d, T_ini + r.size());
-    auto Y_p = SubMatrix(Y, 0, T_ini, 0, Y.cols()); // past
-    auto Y_f = SubMatrix(Y, T_ini, Y.rows(), 0, Y.cols()); // future
+    VectorXd r = concat(target_output);
+
+    auto U = HankelMatrix(T_ini + r.size(), u_d);
+    auto U_p = U.block(0, 0, T_ini, U.cols());                // past
+    auto U_f = U.block(T_ini, 0, U.rows() - T_ini, U.cols()); // future
+    auto Y = HankelMatrix(T_ini + r.size(), y_d);
+    auto Y_p = Y.block(0, 0, T_ini, Y.cols());                // past
+    auto Y_f = Y.block(T_ini, 0, Y.rows() - T_ini, Y.cols()); // future
 
     // Now solving
     // minimize: ||y - r||_Q^2 + ||u||_R^2
@@ -56,114 +61,111 @@ std::vector<double> deePC(
     // and
     // Y_f * g = y  (2).
 
-    // We multiply (1) from the left with the left pseudo inverse of A.
+    // We multiply (1) from the left with the pseudo inverse of A.
     // Since pinv(A) * A = I, we get g = pinv(A) * [x; u].
     // Substituting g in (2) gives Y_f * pinv(A) * [x; u] = y.
 
     // We define
-    auto B = Y_f * left_pseudoinverse(A);
-    // and get B * [x; u] = y.
+    auto M = Y_f * A.completeOrthogonalDecomposition().pseudoInverse();
+    // and get M * [x; u] = y.
 
-    // We define (B_x, B_u) := B such that B_x * x + B_u * u = y.
-    auto B_x = SubMatrix(B, 0, B.rows(), 0, 2 * T_ini);
-    auto B_u = SubMatrix(B, 0, B.rows(), 2 * T_ini, B.cols());
+    // We define [M_x; M_u] := M
+    // such that M_x * x + M_u * u = y.
+    auto M_x = M.block(0, 0, M.rows(), x.size());
+    auto M_u = M.block(0, x.size(), M.rows(), M.cols() - x.size());
+    auto M_u_T = M_u.transpose();
 
     // We can now solve the unconstrained problem.
     // This is a ridge regression problem with generalized Tikhonov regularization.
     // https://en.wikipedia.org/wiki/Ridge_regression//Generalized_Tikhonov_regularization
     // minimize: ||y - r||_Q^2 + ||u||_R^2
-    // subject to: B_u * u = y - B_x * x
+    // subject to: M_u * u = y - M_x * x
+    // This has an explicit solution u_star = (M_u^T * Q * M_u + R)^-1 * (M_u^T * Q * y).
 
-    auto G = transposed(B_u) * Q * B_u + R;
-    auto u_star = solve(G, transposed(B_u) * Q * (r - B_x * x));
+    auto G = M_u_T * Q * M_u + R;
+    auto w = M_u_T * Q * (r - M_x * x);
+    auto u_star = G.ldlt().solve(w).eval();
 
-    if (control_constrain_fkt == nullptr)
-        return u_star;
-    else
-        return projected_gradient_method(
+    if (control_constrain_fkt != nullptr)
+        u_star = projected_gradient_method(
             G,
             u_star,
+            w,
             control_constrain_fkt,
             max_pgm_iterations,
             pgm_tolerance);
+
+    return split(u_star, r.size());
 }
 
-std::vector<double> deePC(
-    const std::vector<double>& u_d,
-    const std::vector<double>& y_d,
-    const std::vector<double>& u_ini,
-    const std::vector<double>& y_ini,
-    const std::vector<double>& r,
-    std::function<std::vector<double>(const std::vector<double>&)> control_constrain_fkt = nullptr,
+inline std::vector<VectorXd> deePC(
+    const std::vector<VectorXd>& u_d,
+    const std::vector<VectorXd>& y_d,
+    const std::vector<VectorXd>& u_ini,
+    const std::vector<VectorXd>& y_ini,
+    const std::vector<VectorXd>& r,
+    std::function<VectorXd(const VectorXd&)> control_constrain_fkt = nullptr,
     int max_pgm_iterations = 300,
     double pgm_tolerance = 1e-6)
 {
-    auto Q = IdentityMatrix(y_ini.size());
-    auto R = ZeroMatrix(u_ini.size());
+    auto Q = MatrixXd::Identity(r.size(), r.size());
+    auto R = MatrixXd::Zero(r.size(), r.size());
     return deePC(u_d, y_d, u_ini, y_ini, r, Q, R, control_constrain_fkt, max_pgm_iterations, pgm_tolerance);
 }
 
-
-class MaxSizeQueue
+class FiniteQueue
 {
-    std::deque<double> data;
+    std::deque<VectorXd> data;
     int max_size;
-public:
-    MaxSizeQueue(int max_size) : max_size(max_size) {}
 
-    void push_back(double value)
+public:
+    FiniteQueue(int max_size) : max_size(max_size) {}
+
+    void push_back(VectorXd value)
     {
-        data.push_back(value);
+        data.push_back(std::move(value));
         if (data.size() > max_size)
             data.pop_front();
     }
-    std::vector<double> get() const { return std::vector<double>(data.begin(), data.end()); }
+    std::vector<VectorXd> get() const { return std::vector<VectorXd>(data.begin(), data.end()); }
     int size() const { return data.size(); }
     void clear() { data.clear(); }
 };
-
 
 // Controller
 class DeePC
 {
     int T_ini;
     int r_size;
-    MaxSizeQueue u_ini, y_ini;
-    DenseMatrix B, G;
-    const IMatrix& Q;
-    const IMatrix& R;
-    std::function<std::vector<double>(const std::vector<double>&)> control_constrain_fkt;
+    FiniteQueue u_ini, y_ini;
+    MatrixXd M, G;
+    const MatrixXd &Q;
+    const MatrixXd &R;
+    std::function<VectorXd(const VectorXd &)> control_constrain_fkt;
     int max_pgm_iterations;
     double pgm_tolerance;
+
 public:
     DeePC(
-        const std::vector<double>& u_d,
-        const std::vector<double>& y_d,
+        const std::vector<VectorXd> &u_d,
+        const std::vector<VectorXd> &y_d,
         int T_ini,
         int r_size,
-        const IMatrix& Q,
-        const IMatrix& R,
-        std::function<std::vector<double>(const std::vector<double>&)> control_constrain_fkt = nullptr,
+        const MatrixXd &Q,
+        const MatrixXd &R,
+        std::function<VectorXd(const VectorXd &)> control_constrain_fkt = nullptr,
         int max_pgm_iterations = 300,
         double pgm_tolerance = 1e-6)
-        : T_ini(T_ini)
-        , r_size(r_size)
-        , u_ini(T_ini)
-        , y_ini(T_ini)
-        , Q(Q)
-        , R(R)
-        , control_constrain_fkt(control_constrain_fkt)
-        , max_pgm_iterations(max_pgm_iterations)
-        , pgm_tolerance(pgm_tolerance)
+        : T_ini(T_ini), r_size(r_size), u_ini(T_ini), y_ini(T_ini), Q(Q), R(R), control_constrain_fkt(control_constrain_fkt), max_pgm_iterations(max_pgm_iterations), pgm_tolerance(pgm_tolerance)
     {
-        assert(u_d.size() == y_d.size(), "u_d and y_d must have the same size.");
+        assert(u_d.size() == y_d.size());
 
-        auto U = HankelMatrix(u_d, T_ini + r_size);
-        auto U_p = SubMatrix(U, 0, T_ini, 0, U.cols()); // past
-        auto U_f = SubMatrix(U, T_ini, U.rows(), 0, U.cols()); // future
-        auto Y = HankelMatrix(y_d, T_ini + r_size);
-        auto Y_p = SubMatrix(Y, 0, T_ini, 0, Y.cols()); // past
-        auto Y_f = SubMatrix(Y, T_ini, Y.rows(), 0, Y.cols()); // future
+        auto U = HankelMatrix(T_ini + r_size, u_d);
+        auto U_p = U.block(0, 0, T_ini, U.cols());                // past
+        auto U_f = U.block(T_ini, 0, U.rows() - T_ini, U.cols()); // future
+        auto Y = HankelMatrix(T_ini + r_size, y_d);
+        auto Y_p = Y.block(0, 0, T_ini, Y.cols());                // past
+        auto Y_f = Y.block(T_ini, 0, Y.rows() - T_ini, Y.cols()); // future
 
         // Now solving
         // minimize: ||y - r||_Q^2 + ||u||_R^2
@@ -182,22 +184,22 @@ public:
         // Substituting g in (2) gives Y_f * pinv(A) * [x; u] = y.
 
         // We define
-        auto B = Y_f * left_pseudoinverse(A);
-        // and get B * [x; u] = y.
+        M = Y_f * A.completeOrthogonalDecomposition().pseudoInverse();
+        // and get M * [x; u] = y.
 
-        // We define (B_x, B_u) := B such that B_x * x + B_u * u = y.
-        auto B_x = SubMatrix(B, 0, B.rows(), 0, 2 * T_ini);
-        auto B_u = SubMatrix(B, 0, B.rows(), 2 * T_ini, B.cols());
+        // We define [M_x; M_u] := M
+        // such that M_x * x + M_u * u = y.
+        auto M_u = M.block(0, T_ini * 2, M.rows(), M.cols() - T_ini * 2);
 
         // We can now solve the unconstrained problem.
         // This is a ridge regression problem with generalized Tikhonov regularization.
         // https://en.wikipedia.org/wiki/Ridge_regression//Generalized_Tikhonov_regularization
         // minimize: ||y - r||_Q^2 + ||u||_R^2
-        // subject to: B_u * u = y - B_x * x
-        // This has an explicit solution u_star = (B_u^T * Q * B_u + R)^-1 * (B_u^T * Q * y).
+        // subject to: M_u * u = y - M_x * x
+        // This has an explicit solution u_star = (M_u^T * Q * M_u + R)^-1 * (M_u^T * Q * y).
 
-        // We precompute G = B_u^T * Q * B_u + R.
-        G = transposed(B_u) * Q * B_u + R;
+        // We precompute the matrix G = M_u^T * Q * M_u + R.
+        G = M_u.transpose() * Q * M_u + R;
     }
 
     bool is_initialized() const
@@ -205,10 +207,10 @@ public:
         return u_ini.size() == T_ini && y_ini.size() == T_ini;
     }
 
-    void append(double u, double y)
+    void append(VectorXd u, VectorXd y)
     {
-        u_ini.push_back(u);
-        y_ini.push_back(y);
+        u_ini.push_back(std::move(u));
+        y_ini.push_back(std::move(y));
     }
 
     void clear()
@@ -217,23 +219,27 @@ public:
         y_ini.clear();
     }
 
-    std::vector<double> control(const std::vector<double>& r)
+    VectorXd control(const VectorXd &r)
     {
-        assert(is_initialized(), "Internal state is not initialized.");
-        assert(r.size() == r_size, "Reference trajectory has the wrong length.");
+        assert(is_initialized());
+        assert(r.size() == r_size);
 
-        // We define (B_x, B_u) := B such that B_x * x + B_u * u = y.
-        auto B_x = SubMatrix(B, 0, B.rows(), 0, 2 * T_ini);
-        auto B_u = SubMatrix(B, 0, B.rows(), 2 * T_ini, B.cols());
+        // We define [M_x; M_u] := M
+        // such that M_x * x + M_u * u = y.
+        auto M_x = M.block(0, 0, M.rows(), T_ini * 2);
+        auto M_u = M.block(0, T_ini * 2, M.rows(), M.cols() - T_ini * 2);
 
         auto x = concat(u_ini.get(), y_ini.get());
-        auto u_star = solve(G, transposed(B_u) * Q * (r - B_x * x));
+        auto w = M_u.transpose() * Q * (r - M_x * x);
+        auto u_star = G.ldlt().solve(w);
+
         if (control_constrain_fkt == nullptr)
             return u_star;
         else
             return projected_gradient_method(
                 G,
                 u_star,
+                w,
                 control_constrain_fkt,
                 max_pgm_iterations,
                 pgm_tolerance);
