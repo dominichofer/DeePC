@@ -16,6 +16,6 @@ jobs:
     - name: cmake
       run: cmake -B build
     - name: make
-      run: make -C build
+      run: make -C build -j$(nproc)
     - name: run tests
       run: ./build/tests/deepcpp/DeePCppTest

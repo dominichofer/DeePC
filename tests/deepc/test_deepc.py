@@ -122,7 +122,7 @@ class deePC_simple_system_1D_input_1D_output(unittest.TestCase):
         y_d = [1, 2, 3, 4, -5, 6, 7, 8, 9, 10]
         u_ini = [2]
         y_ini = [2]
-        u = [4]
+        u = [[4]]
         r = [4]
 
         u_star = deePC(u_d, y_d, u_ini, y_ini, r)
@@ -134,7 +134,7 @@ class deePC_simple_system_1D_input_1D_output(unittest.TestCase):
         y_d = [1, 2, 3, 4, -5, 6, 7, 8, 9, 10]
         u_ini = [2]
         y_ini = [2]
-        u = [4, 4]
+        u = [[4], [4]]
         r = [4, 4]
 
         u_star = deePC(u_d, y_d, u_ini, y_ini, r)
@@ -206,7 +206,7 @@ class deePC_simple_system_1D_input_1D_output(unittest.TestCase):
         y_d = np.array([1, 2, 3, 4, 5])
         u_ini = np.array([2])
         y_ini = np.array([2])
-        u = np.array([4])
+        u = np.array([[4]])
         r = np.array([4])
 
         u_star = deePC(u_d, y_d, u_ini, y_ini, r)

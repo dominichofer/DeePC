@@ -4,10 +4,21 @@
 #include <cassert>
 #include <deque>
 #include <functional>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
+
+void check_dimensions(const std::vector<VectorXd>& var, std::string name, int size, int dims)
+{
+    if (var.size() != size)
+        throw std::invalid_argument(name + ".size()=" + std::to_string(var.size()) + " but should be " + std::to_string(size) + ".");
+    for (int i = 0; i < size; ++i)
+        if (var[i].size() != dims)
+            throw std::invalid_argument(name + "[" + std::to_string(i) + "].size()=" + std::to_string(var[i].size()) + " but should be " + std::to_string(dims) + ".");
+}
 
 // Returns the optimal control for a given system and reference trajectory.
 // According to the paper Data-Enabled Predictive Control: In the Shallows of the DeePC
@@ -29,25 +40,39 @@ inline std::vector<VectorXd> deePC(
     const std::vector<VectorXd>& y_d,
     const std::vector<VectorXd>& u_ini,
     const std::vector<VectorXd>& y_ini,
-    const std::vector<VectorXd>& target_output,
+    const std::vector<VectorXd>& r,
     const MatrixXd &Q,
     const MatrixXd &R,
     std::function<VectorXd(const VectorXd&)> control_constrain_fkt = nullptr,
     int max_pgm_iterations = 300,
     double pgm_tolerance = 1e-6)
 {
-    assert(u_d.size() == y_d.size());
-    assert(u_ini.size() == y_ini.size());
-    int T_ini = u_ini.size();
+    const int offline_size = u_d.size();
+    const int T_ini = u_ini.size();
+    const int target_size = r.size();
+    const int input_dims = u_d.front().size();
+    const int output_dims = y_d.front().size();
 
-    VectorXd r = concat(target_output);
+    check_dimensions(u_d, "u_d", offline_size, input_dims);
+    check_dimensions(y_d, "y_d", offline_size, output_dims);
+    check_dimensions(u_ini, "u_ini", T_ini, input_dims);
+    check_dimensions(y_ini, "y_ini", T_ini, output_dims);
+    check_dimensions(r, "r", target_size, output_dims);
 
-    auto U = HankelMatrix(T_ini + r.size(), u_d);
-    auto U_p = U.block(0, 0, T_ini, U.cols());                // past
-    auto U_f = U.block(T_ini, 0, U.rows() - T_ini, U.cols()); // future
-    auto Y = HankelMatrix(T_ini + r.size(), y_d);
-    auto Y_p = Y.block(0, 0, T_ini, Y.cols());                // past
-    auto Y_f = Y.block(T_ini, 0, Y.rows() - T_ini, Y.cols()); // future
+    // Check Q
+    assert(Q.rows() == Q.cols());
+    assert(Q.rows() == target_size * output_dims);
+
+    // Check R
+    assert(R.rows() == R.cols());
+    assert(R.rows() == target_size * input_dims);
+
+    auto U = HankelMatrix(T_ini + target_size, u_d);
+    auto U_p = U.block(0, 0, T_ini * input_dims, U.cols()); // past
+    auto U_f = U.block(T_ini * input_dims, 0, U.rows() - T_ini * input_dims, U.cols()); // future
+    auto Y = HankelMatrix(T_ini + target_size, y_d);
+    auto Y_p = Y.block(0, 0, T_ini * output_dims, Y.cols()); // past
+    auto Y_f = Y.block(T_ini * output_dims, 0, Y.rows() - T_ini * output_dims, Y.cols()); // future
 
     // Now solving
     // minimize: ||y - r||_Q^2 + ||u||_R^2
@@ -81,9 +106,12 @@ inline std::vector<VectorXd> deePC(
     // minimize: ||y - r||_Q^2 + ||u||_R^2
     // subject to: M_u * u = y - M_x * x
     // This has an explicit solution u_star = (M_u^T * Q * M_u + R)^-1 * (M_u^T * Q * y).
+    
+    // Flatten r
+    VectorXd r_ = concat(r);
 
     auto G = M_u_T * Q * M_u + R;
-    auto w = M_u_T * Q * (r - M_x * x);
+    auto w = M_u_T * Q * (r_ - M_x * x);
     auto u_star = G.ldlt().solve(w).eval();
 
     if (control_constrain_fkt != nullptr)
@@ -95,7 +123,7 @@ inline std::vector<VectorXd> deePC(
             max_pgm_iterations,
             pgm_tolerance);
 
-    return split(u_star, r.size());
+    return split(u_star, target_size);
 }
 
 inline std::vector<VectorXd> deePC(
@@ -103,14 +131,22 @@ inline std::vector<VectorXd> deePC(
     const std::vector<VectorXd>& y_d,
     const std::vector<VectorXd>& u_ini,
     const std::vector<VectorXd>& y_ini,
-    const std::vector<VectorXd>& r,
+    const std::vector<VectorXd>& target_output,
     std::function<VectorXd(const VectorXd&)> control_constrain_fkt = nullptr,
     int max_pgm_iterations = 300,
     double pgm_tolerance = 1e-6)
 {
-    auto Q = MatrixXd::Identity(r.size(), r.size());
-    auto R = MatrixXd::Zero(r.size(), r.size());
-    return deePC(u_d, y_d, u_ini, y_ini, r, Q, R, control_constrain_fkt, max_pgm_iterations, pgm_tolerance);
+    const int target_size = target_output.size();
+    const int input_dims = u_d.front().size();
+    const int output_dims = y_d.front().size();
+
+    const int Q_size = target_size * output_dims;
+    auto Q = MatrixXd::Identity(Q_size, Q_size);
+
+    const int R_size = target_size * input_dims;
+    auto R = MatrixXd::Zero(R_size, R_size);
+
+    return deePC(u_d, y_d, u_ini, y_ini, target_output, Q, R, control_constrain_fkt, max_pgm_iterations, pgm_tolerance);
 }
 
 class FiniteQueue

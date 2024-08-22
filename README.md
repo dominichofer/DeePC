@@ -37,7 +37,7 @@ def deePC(
     control_constrain_fkt: Callable | None = None,
     max_pgm_iterations=300,
     pgm_tolerance=1e-6,
-) -> list[float]:
+) -> np.ndarray:
     """
     Returns the optimal control for a given system and reference trajectory.
     According to the paper Data-Enabled Predictive Control: In the Shallows of the DeePC
