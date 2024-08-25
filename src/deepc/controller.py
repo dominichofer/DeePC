@@ -55,12 +55,24 @@ class Controller:
         self.input_dims = u_d.shape[1]
         self.output_dims = y_d.shape[1]
 
-        assert u_d.shape == (offline_len, self.input_dims), f"{u_d.shape=} but should be ({offline_len}, {input_dims})."
-        assert y_d.shape == (offline_len, self.output_dims), f"{y_d.shape=} but should be ({offline_len}, {output_dims})."
+        assert u_d.shape == (
+            offline_len,
+            self.input_dims,
+        ), f"{u_d.shape=} but should be ({offline_len}, {self.input_dims})."
+        assert y_d.shape == (
+            offline_len,
+            self.output_dims,
+        ), f"{y_d.shape=} but should be ({offline_len}, {self.output_dims})."
         if u_ini is not None:
-            assert u_ini.shape == (T_ini, self.input_dims), f"{u_ini.shape=} but should be ({T_ini}, {input_dims})."
+            assert u_ini.shape == (
+                T_ini,
+                self.input_dims,
+            ), f"{u_ini.shape=} but should be ({T_ini}, {self.input_dims})."
         if y_ini is not None:
-            assert y_ini.shape == (T_ini, self.output_dims), f"{y_ini.shape=} but should be ({T_ini}, {output_dims})."
+            assert y_ini.shape == (
+                T_ini,
+                self.output_dims,
+            ), f"{y_ini.shape=} but should be ({T_ini}, {self.output_dims})."
 
         self.T_ini = T_ini
         self.target_len = target_len
@@ -162,7 +174,10 @@ class Controller:
             return None
 
         target = as_column_vector(np.array(target))
-        assert target.shape == (self.target_len, self.output_dims), f"{target.shape=} but should be ({self.target_len}, {self.output_dims})."
+        assert target.shape == (
+            self.target_len,
+            self.output_dims,
+        ), f"{target.shape=} but should be ({self.target_len}, {self.output_dims})."
 
         # Flatten
         target = np.concatenate(target).reshape(-1, 1)
