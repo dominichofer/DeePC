@@ -94,7 +94,7 @@ class TestDiscreteLTI(unittest.TestCase):
             D=[[1]],
             x_ini=[1, 1],
         )
-        y = system.apply(1)
+        y = system.apply([1])
         self.assertAlmostEqual(y, 7)
 
     def test_apply_2d(self):
@@ -117,7 +117,7 @@ class TestDiscreteLTI(unittest.TestCase):
             x_ini=[1, 1],
         )
         y = system.apply_multiple([1, 2, 3])
-        np.testing.assert_almost_equal(y, [7, 18, 41])
+        np.testing.assert_almost_equal(y, [[7], [18], [41]])
 
     def test_apply_multiple_2d(self):
         system = DiscreteLTI(
@@ -128,7 +128,7 @@ class TestDiscreteLTI(unittest.TestCase):
             x_ini=[1, 1],
         )
         y = system.apply_multiple([[1, 1], [2, 2]])
-        np.testing.assert_almost_equal(y, [10, 28])
+        np.testing.assert_almost_equal(y, [[10], [28]])
 
 
 if __name__ == "__main__":
