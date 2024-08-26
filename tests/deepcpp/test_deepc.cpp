@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 #include "deepc.h"
+#include "controller.h"
 #include "algorithm.h"
 #include "lti.h"
 #include "helpers.h"
@@ -81,7 +82,7 @@ protected:
     DiscreteLTI system;
     std::vector<VectorXd> u_d, y_d;
     std::vector<VectorXd> u_ini, y_ini;
-    std::vector<VectorXd> r;
+    std::vector<VectorXd> target;
 
     void SetUp() override
     {
@@ -95,29 +96,29 @@ protected:
         y_ini = system.apply_multiple(u_ini);
 
         // Reference trajectory
-        r = std::vector<VectorXd>(2, Vector(3));
+        target = std::vector<VectorXd>(2, Vector(3));
     }
 };
 
 TEST_F(Test_deePC_1D_input_1D_output, Unconstrained)
 {
-    std::vector<VectorXd> u_star = deePC(u_d, y_d, u_ini, y_ini, r);
+    std::vector<VectorXd> u_star = deePC(u_d, y_d, u_ini, y_ini, target);
 
     std::vector<VectorXd> y_star = system.apply_multiple(u_star);
-    expect_near(y_star, r, 1e-5);
+    expect_near(y_star, target, 1e-5);
 }
 
 TEST_F(Test_deePC_1D_input_1D_output, Constrained)
 {
     std::vector<VectorXd> u_star = deePC(
-        u_d, y_d, u_ini, y_ini, r,
+        u_d, y_d, u_ini, y_ini, target,
         [](const VectorXd &u)
         {
             return clamp(u, -15, 15);
         });
 
     std::vector<VectorXd> y_star = system.apply_multiple(u_star);
-    expect_near(y_star, r, 1e-5);
+    expect_near(y_star, target, 1e-5);
 }
 
 class Test_deePC_2D_input_3D_output : public ::testing::Test
@@ -126,7 +127,7 @@ protected:
     DiscreteLTI system;
     std::vector<VectorXd> u_d, y_d;
     std::vector<VectorXd> u_ini, y_ini;
-    std::vector<VectorXd> r;
+    std::vector<VectorXd> target;
 
     void SetUp() override
     {
@@ -140,29 +141,29 @@ protected:
         y_ini = system.apply_multiple(u_ini);
 
         // Reference trajectory
-        r = Vectors({0.35, 1.1, 0.35});
+        target = Vectors({0.35, 1.1, 0.35});
     }
 };
 
 TEST_F(Test_deePC_2D_input_3D_output, Unconstrained)
 {
-    std::vector<VectorXd> u_star = deePC(u_d, y_d, u_ini, y_ini, r);
+    std::vector<VectorXd> u_star = deePC(u_d, y_d, u_ini, y_ini, target);
 
     std::vector<VectorXd> y_star = system.apply_multiple(u_star);
-    expect_near(y_star, r, 0.05);
+    expect_near(y_star, target, 0.05);
 }
 
 TEST_F(Test_deePC_2D_input_3D_output, Constrained)
 {
     std::vector<VectorXd> u_star = deePC(
-        u_d, y_d, u_ini, y_ini, r,
+        u_d, y_d, u_ini, y_ini, target,
         [](const VectorXd &u)
         {
             return clamp(u, -15, 15);
         });
 
     std::vector<VectorXd> y_star = system.apply_multiple(u_star);
-    expect_near(y_star, r, 0.05);
+    expect_near(y_star, target, 0.05);
 }
 
 TEST(Test_deePC_simple_system, 1D_input_1D_output)
@@ -191,7 +192,7 @@ TEST(Test_deePC_simple_system, 1D_input_1D_output_3_targets)
 
 TEST(Test_deePC_simple_system, 2D_input_3D_output)
 {
-    std::vector<VectorXd> u_d, y_d, u_ini, y_ini, u, r;
+    std::vector<VectorXd> u_d, y_d, u_ini, y_ini, u, target;
     for (int i = 0; i < 3; i++)
         for (int j = 0; j < 3; j++)
             u_d.push_back(Vector(i, j));
@@ -202,9 +203,58 @@ TEST(Test_deePC_simple_system, 2D_input_3D_output)
         y_ini.push_back(Vector(u(0), u(1), u(0) + u(1)));
     u = Vectors({1, 3});
     for (const VectorXd &u : u)
-        r.push_back(Vector(u(0), u(1), u(0) + u(1)));
+        target.push_back(Vector(u(0), u(1), u(0) + u(1)));
 
-    auto u_star = deePC(u_d, y_d, u_ini, y_ini, r);
+    auto u_star = deePC(u_d, y_d, u_ini, y_ini, target);
 
     expect_near(u_star, u, 1e-5);
+}
+
+// Warm up the controller until it is initialized
+void warm_up_controller(Controller& controller, DiscreteLTI& system, const VectorXd& u)
+{
+    while (!controller.is_initialized())
+    {
+        VectorXd y = system.apply(u);
+        controller.update(u, y);
+    }
+}
+
+// Control the system for a given number of time steps.
+// Returns the output of the system after the last time step.
+VectorXd control_system(Controller& controller, DiscreteLTI& system, const std::vector<VectorXd>& target, int time_steps)
+{
+    VectorXd u, y;
+    for (int i = 0; i < time_steps; ++i)
+    {
+        u = controller.apply(target).front();
+        y = system.apply(u);
+        controller.update(u, y);
+    }
+    return y;
+}
+
+TEST(Test_Controller, unconstrained_2D_LTI)
+{
+    DiscreteLTI system = lti_1D_input_1D_output();
+    auto [u_d, y_d] = gather_offline_data(system);
+    int T_ini = 20;
+    std::vector<VectorXd> target = Vectors({10}, {10}, {10});
+
+    Controller controller(u_d, y_d, T_ini, target.size());
+    warm_up_controller(controller, system, Vector(1));
+    VectorXd y = control_system(controller, system, target, 2 * T_ini);
+}
+
+TEST(Test_Controller, constrained_2D_LTI)
+{
+    DiscreteLTI system = lti_1D_input_1D_output();
+    auto [u_d, y_d] = gather_offline_data(system);
+    int T_ini = 20;
+    std::vector<VectorXd> target = Vectors({10}, {10}, {10});
+
+    auto control_constrain_fkt = [](const VectorXd &u) { return clamp(u, 0, 25); };
+    Controller controller(u_d, y_d, T_ini, target.size(), control_constrain_fkt);
+    warm_up_controller(controller, system, Vector(1));
+    VectorXd y = control_system(controller, system, target, 2 * T_ini);
 }
