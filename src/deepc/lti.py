@@ -71,7 +71,7 @@ class DiscreteLTI:
         eig_vals = np.linalg.eigvals(self.A)
         return bool(np.all(np.abs(eig_vals) < 1))
 
-    def apply(self, u: int | float | tuple | list | np.ndarray) -> float | np.ndarray:
+    def apply(self, u: list | np.ndarray) -> np.ndarray:
         "Apply input(s) and get output(s)"
         if isinstance(u, (int, float)):
             u = np.array([u])
@@ -82,13 +82,9 @@ class DiscreteLTI:
         assert u.shape[0] == self.D.shape[1]
 
         self.x = self.A @ self.x + self.B @ u
-        y = self.C @ self.x + self.D @ u
+        return self.C @ self.x + self.D @ u
 
-        if y.shape[0] == 1:
-            return y[0].item()
-        return y
-
-    def apply_multiple(self, u: list[int | float | tuple | list | np.ndarray]) -> list[float | np.ndarray]:
+    def apply_multiple(self, u: list[list | np.ndarray]) -> list[np.ndarray]:
         "Apply multiple inputs and get multiple outputs"
         return [self.apply(u_i) for u_i in u]
 
@@ -109,7 +105,7 @@ class RandomNoiseDiscreteLTI(DiscreteLTI):
         super().__init__(A, B, C, D, x_ini)
         self.noise_std = noise_std
 
-    def apply(self, u: int | float | tuple | list | np.ndarray) -> float | np.ndarray:
+    def apply(self, u: list | np.ndarray) -> np.ndarray:
         "Apply input(s) and get output(s) with random noise"
         y = super().apply(u)
         noise = np.random.normal(0, self.noise_std, self.output_dim)

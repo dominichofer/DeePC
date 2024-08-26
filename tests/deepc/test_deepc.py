@@ -60,13 +60,13 @@ class Test_deePC_1D_input_1D_output(unittest.TestCase):
         self.y_ini = self.system.apply_multiple(self.u_ini)
 
         # Reference trajectory
-        self.r = [3, 3]
+        self.target = [[3], [3]]
 
     def test_unconstrained(self):
-        u_star = deePC(self.u_d, self.y_d, self.u_ini, self.y_ini, self.r)
+        u_star = deePC(self.u_d, self.y_d, self.u_ini, self.y_ini, self.target)
 
         y_star = self.system.apply_multiple(u_star)
-        np.testing.assert_array_almost_equal(y_star, self.r)
+        np.testing.assert_array_almost_equal(y_star, self.target)
 
     def test_constrained(self):
         u_star = deePC(
@@ -74,12 +74,12 @@ class Test_deePC_1D_input_1D_output(unittest.TestCase):
             self.y_d,
             self.u_ini,
             self.y_ini,
-            self.r,
+            self.target,
             control_constrain_fkt=lambda u: np.clip(u, -15, 15),
         )
 
         y_star = self.system.apply_multiple(u_star)
-        np.testing.assert_array_almost_equal(y_star, self.r)
+        np.testing.assert_array_almost_equal(y_star, self.target)
 
 
 class Test_deePC_2D_input_3D_output(unittest.TestCase):
@@ -264,7 +264,7 @@ class deePC_simple_system_2D_input_3D_output(unittest.TestCase):
         np.testing.assert_array_almost_equal(u_star, u)
 
 
-def warm_up_controller(controller: Controller, system: DiscreteLTI, u: float) -> None:
+def warm_up_controller(controller: Controller, system: DiscreteLTI, u: list | np.ndarray) -> None:
     "Warm up the controller until it is initialized"
     while not controller.is_initialized():
         y = system.apply(u)
@@ -288,27 +288,27 @@ class TestController(unittest.TestCase):
         system = lti_1D_input_1D_output()
         u_d, y_d = gather_offline_data(system)
         T_ini = 20
-        r_len = 3
-        r = [10] * r_len
+        target = [[10], [10], [10]]
+        target_len = len(target)
 
-        controller = Controller(u_d, y_d, T_ini, r_len)
-        warm_up_controller(controller, system, u=1)
-        y = control_system(controller, system, r, time_steps=2 * T_ini)
+        controller = Controller(u_d, y_d, T_ini, target_len)
+        warm_up_controller(controller, system, u=[1])
+        y = control_system(controller, system, target, time_steps=2 * T_ini)
 
-        self.assertAlmostEqual(y, r[0])
+        np.testing.assert_array_almost_equal(y, target[0])
 
     def test_constrained_2D_LTI(self):
         system = lti_1D_input_1D_output()
         u_d, y_d = gather_offline_data(system)
         T_ini = 20
-        r_len = 1
-        r = [10] * r_len
+        target = [[10]]
+        target_len = len(target)
 
-        controller = Controller(u_d, y_d, T_ini, r_len, control_constrain_fkt=lambda u: np.clip(u, 0, 25))
-        warm_up_controller(controller, system, u=1)
-        y = control_system(controller, system, r, time_steps=2 * T_ini)
+        controller = Controller(u_d, y_d, T_ini, target_len, control_constrain_fkt=lambda u: np.clip(u, 0, 25))
+        warm_up_controller(controller, system, u=[1])
+        y = control_system(controller, system, target, time_steps=2 * T_ini)
 
-        self.assertAlmostEqual(y, r[0])
+        np.testing.assert_array_almost_equal(y, target[0])
 
 
 if __name__ == "__main__":
