@@ -271,13 +271,13 @@ def warm_up_controller(controller: Controller, system: DiscreteLTI, u: list | np
         controller.update(u, y)
 
 
-def control_system(controller: Controller, system: DiscreteLTI, r: list, time_steps: int) -> float:
+def control_system(controller: Controller, system: DiscreteLTI, target: list, time_steps: int) -> float:
     """
     Control the system for a given number of time steps.
     Returns the output of the system after the last time step.
     """
     for _ in range(time_steps):
-        u = controller.apply(r)[0]
+        u = controller.apply(target)[0]
         y = system.apply(u)
         controller.update(u, y)
     return y
@@ -289,9 +289,8 @@ class TestController(unittest.TestCase):
         u_d, y_d = gather_offline_data(system)
         T_ini = 20
         target = [[10], [10], [10]]
-        target_len = len(target)
 
-        controller = Controller(u_d, y_d, T_ini, target_len)
+        controller = Controller(u_d, y_d, T_ini, len(target))
         warm_up_controller(controller, system, u=[1])
         y = control_system(controller, system, target, time_steps=2 * T_ini)
 
@@ -302,9 +301,8 @@ class TestController(unittest.TestCase):
         u_d, y_d = gather_offline_data(system)
         T_ini = 20
         target = [[10]]
-        target_len = len(target)
 
-        controller = Controller(u_d, y_d, T_ini, target_len, control_constrain_fkt=lambda u: np.clip(u, 0, 25))
+        controller = Controller(u_d, y_d, T_ini, len(target), control_constrain_fkt=lambda u: np.clip(u, 0, 25))
         warm_up_controller(controller, system, u=[1])
         y = control_system(controller, system, target, time_steps=2 * T_ini)
 
