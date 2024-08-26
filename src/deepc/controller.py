@@ -121,8 +121,8 @@ class Controller:
 
     def update(self, u: list | np.ndarray, y: list | np.ndarray) -> None:
         "Updates the internal state with the given control input and trajectory."
-        self.u_ini.append(np.array(u))
-        self.y_ini.append(np.array(y))
+        self.u_ini.append(as_column_vector(u))
+        self.y_ini.append(as_column_vector(y))
 
     def clear(self) -> None:
         "Clears the internal state."
@@ -139,11 +139,8 @@ class Controller:
         if not self.is_initialized():
             return None
 
-        target = as_column_vector(np.array(target))
-        assert target.shape == (
-            self.target_len,
-            self.output_dims,
-        ), f"{target.shape=} but should be ({self.target_len}, {self.output_dims})."
+        target = as_column_vector(target)
+        check_dimensions(target, "target", self.target_len, self.output_dims)
 
         # Flatten
         target = np.concatenate(target).reshape(-1, 1)
