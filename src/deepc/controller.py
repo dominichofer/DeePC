@@ -48,12 +48,6 @@ class Controller:
         check_dimensions(u_d, "u_d", offline_len, self.input_dims)
         check_dimensions(y_d, "y_d", offline_len, self.output_dims)
 
-        self.T_ini = T_ini
-        self.target_len = target_len
-
-        self.u_ini: collections.deque[np.ndarray] = collections.deque(maxlen=T_ini)
-        self.y_ini: collections.deque[np.ndarray] = collections.deque(maxlen=T_ini)
-
         Q_size = target_len * self.output_dims
         if isinstance(Q, (int, float)):
             Q = np.eye(Q_size) * Q
@@ -68,6 +62,10 @@ class Controller:
             R = np.zeros((R_size, R_size))
         check_dimensions(R, "R", R_size, R_size)
 
+        self.T_ini = T_ini
+        self.target_len = target_len
+        self.u_ini: collections.deque[np.ndarray] = collections.deque(maxlen=T_ini)
+        self.y_ini: collections.deque[np.ndarray] = collections.deque(maxlen=T_ini)
         self.Q = Q
         self.R = R
         self.control_constrain_fkt = control_constrain_fkt
@@ -102,8 +100,9 @@ class Controller:
         # and get M * [x; u] = y.
 
         # We define [M_x, M_u] := M such that M_x * x + M_u * u = y.
-        self.M_x = M[:, : T_ini * (self.input_dims + self.output_dims)]
-        self.M_u = M[:, T_ini * (self.input_dims + self.output_dims) :]
+        dim_sum = self.input_dims + self.output_dims
+        self.M_x = M[:, : T_ini * dim_sum]
+        self.M_u = M[:, T_ini * dim_sum :]
 
         # We can now solve the unconstrained problem.
         # This is a ridge regression problem with generalized Tikhonov regularization.
