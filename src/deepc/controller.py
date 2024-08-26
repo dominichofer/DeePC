@@ -2,7 +2,7 @@ import collections
 from typing import Callable
 import numpy as np
 from .math import hankel_matrix, projected_gradient_method
-from .deepc import as_column_vector
+from .deepc import as_column_vector, check_dimensions
 
 
 class Controller:
@@ -12,8 +12,6 @@ class Controller:
         y_d: list | np.ndarray,
         T_ini: int,
         target_len: int,
-        u_ini: list | np.ndarray | None = None,
-        y_ini: list | np.ndarray | None = None,
         Q: np.ndarray | int | float | None = None,
         R: np.ndarray | int | float | None = None,
         control_constrain_fkt: Callable | None = None,
@@ -38,69 +36,37 @@ class Controller:
                                 used to solve the constrained optimization problem.
             pgm_tolerance: Tolerance for the PGM algorithm.
         """
-        assert len(u_d) == len(y_d), "u_d and y_d must have the same length."
-        assert T_ini > 0, "T_ini must be greater than zero."
-        assert (u_ini is None) == (y_ini is None), "u_ini and y_ini must both be None or not None."
-        assert (u_ini is None) or (len(u_ini) == T_ini), "u_ini must have the same length as T_ini."
-        assert (y_ini is None) or (len(y_ini) == T_ini), "y_ini must have the same length as T_ini."
+        assert T_ini > 0, f"T_ini must be greater than zero. {T_ini=}"
 
         u_d = as_column_vector(u_d)
         y_d = as_column_vector(y_d)
-        if u_ini is not None:
-            u_ini = as_column_vector(u_ini)
-        if y_ini is not None:
-            y_ini = as_column_vector(y_ini)
 
         offline_len = len(u_d)
         self.input_dims = u_d.shape[1]
         self.output_dims = y_d.shape[1]
 
-        assert u_d.shape == (
-            offline_len,
-            self.input_dims,
-        ), f"{u_d.shape=} but should be ({offline_len}, {self.input_dims})."
-        assert y_d.shape == (
-            offline_len,
-            self.output_dims,
-        ), f"{y_d.shape=} but should be ({offline_len}, {self.output_dims})."
-        if u_ini is not None:
-            assert u_ini.shape == (
-                T_ini,
-                self.input_dims,
-            ), f"{u_ini.shape=} but should be ({T_ini}, {self.input_dims})."
-        if y_ini is not None:
-            assert y_ini.shape == (
-                T_ini,
-                self.output_dims,
-            ), f"{y_ini.shape=} but should be ({T_ini}, {self.output_dims})."
+        check_dimensions(u_d, "u_d", offline_len, self.input_dims)
+        check_dimensions(y_d, "y_d", offline_len, self.output_dims)
 
         self.T_ini = T_ini
         self.target_len = target_len
 
         self.u_ini: collections.deque[np.ndarray] = collections.deque(maxlen=T_ini)
-        if u_ini is not None:
-            for u in u_ini:
-                self.u_ini.append(np.array(u))
-
         self.y_ini: collections.deque[np.ndarray] = collections.deque(maxlen=T_ini)
-        if y_ini is not None:
-            y_ini = as_column_vector(y_ini)
-            for y in y_ini:
-                self.y_ini.append(np.array(y))
 
         Q_size = target_len * self.output_dims
         if isinstance(Q, (int, float)):
             Q = np.eye(Q_size) * Q
         if Q is None:
             Q = np.eye(Q_size)
-        assert Q.shape == (Q_size, Q_size), f"{Q.shape=} but should be ({Q_size}, {Q_size})."
+        check_dimensions(Q, "Q", Q_size, Q_size)
 
         R_size = target_len * self.input_dims
         if isinstance(R, (int, float)):
             R = np.eye(R_size) * R
         if R is None:
             R = np.zeros((R_size, R_size))
-        assert R.shape == (R_size, R_size), f"{R.shape=} but should be ({R_size}, {R_size})."
+        check_dimensions(R, "R", R_size, R_size)
 
         self.Q = Q
         self.R = R

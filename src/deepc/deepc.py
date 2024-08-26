@@ -10,6 +10,11 @@ def as_column_vector(v: list | np.ndarray) -> np.ndarray:
     return v
 
 
+def check_dimensions(var: np.ndarray, name: str, size: int, dims: int) -> None:
+    "Checks the dimensions of a variable."
+    assert var.shape == (size, dims), f"{name}.shape={var.shape} but should be ({size}, {dims})."
+
+
 def deePC(
     u_d: list | np.ndarray,
     y_d: list | np.ndarray,
@@ -53,25 +58,25 @@ def deePC(
     input_dims = u_d.shape[1]
     output_dims = y_d.shape[1]
 
-    assert u_d.shape == (offline_len, input_dims), f"{u_d.shape=} but should be ({offline_len}, {input_dims})."
-    assert y_d.shape == (offline_len, output_dims), f"{y_d.shape=} but should be ({offline_len}, {output_dims})."
-    assert u_ini.shape == (T_ini, input_dims), f"{u_ini.shape=} but should be ({T_ini}, {input_dims})."
-    assert y_ini.shape == (T_ini, output_dims), f"{y_ini.shape=} but should be ({T_ini}, {output_dims})."
-    assert target.shape == (target_len, output_dims), f"{target.shape=} but should be ({target_len}, {output_dims})."
+    check_dimensions(u_d, "u_d", offline_len, input_dims)
+    check_dimensions(y_d, "y_d", offline_len, output_dims)
+    check_dimensions(u_ini, "u_ini", T_ini, input_dims)
+    check_dimensions(y_ini, "y_ini", T_ini, output_dims)
+    check_dimensions(target, "target", target_len, output_dims)
 
     Q_size = target_len * output_dims
     if isinstance(Q, (int, float)):
         Q = np.eye(Q_size) * Q
     if Q is None:
         Q = np.eye(Q_size)
-    assert Q.shape == (Q_size, Q_size), f"{Q.shape=} but should be ({Q_size}, {Q_size})."
+    check_dimensions(Q, "Q", Q_size, Q_size)
 
     R_size = target_len * input_dims
     if isinstance(R, (int, float)):
         R = np.eye(R_size) * R
     if R is None:
         R = np.zeros((R_size, R_size))
-    assert R.shape == (R_size, R_size), f"{R.shape=} but should be ({R_size}, {R_size})."
+    check_dimensions(R, "R", R_size, R_size)
 
     # Flatten
     u_ini = np.concatenate(u_ini).reshape(-1, 1)
