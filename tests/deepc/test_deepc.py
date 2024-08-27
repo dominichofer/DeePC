@@ -75,7 +75,7 @@ class Test_deePC_1D_input_1D_output(unittest.TestCase):
             self.u_ini,
             self.y_ini,
             self.target,
-            control_constrain_fkt=lambda u: np.clip(u, -15, 15),
+            input_constrain_fkt=lambda u: np.clip(u, -15, 15),
         )
 
         y_star = self.system.apply_multiple(u_star)
@@ -109,7 +109,7 @@ class Test_deePC_2D_input_3D_output(unittest.TestCase):
             self.u_ini,
             self.y_ini,
             self.r,
-            control_constrain_fkt=lambda u: np.clip(u, -15, 15),
+            input_constrain_fkt=lambda u: np.clip(u, -15, 15),
         )
 
         y_star = self.system.apply_multiple(u_star)
@@ -302,7 +302,7 @@ class TestController(unittest.TestCase):
         T_ini = 20
         target = [[10]]
 
-        controller = Controller(u_d, y_d, T_ini, len(target), control_constrain_fkt=lambda u: np.clip(u, 0, 25))
+        controller = Controller(u_d, y_d, T_ini, len(target), input_constrain_fkt=lambda u: np.clip(u, 0, 25))
         warm_up_controller(controller, system, u=[1])
         y = control_system(controller, system, target, time_steps=2 * T_ini)
 

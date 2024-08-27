@@ -253,8 +253,8 @@ TEST(Test_Controller, constrained_2D_LTI)
     int T_ini = 20;
     std::vector<VectorXd> target = Vectors({10}, {10}, {10});
 
-    auto control_constrain_fkt = [](const VectorXd &u) { return clamp(u, 0, 25); };
-    Controller controller(u_d, y_d, T_ini, target.size(), control_constrain_fkt);
+    auto input_constrain_fkt = [](const VectorXd &u) { return clamp(u, 0, 25); };
+    Controller controller(u_d, y_d, T_ini, target.size(), input_constrain_fkt);
     warm_up_controller(controller, system, Vector(1));
     VectorXd y = control_system(controller, system, target, 2 * T_ini);
 }

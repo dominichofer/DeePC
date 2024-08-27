@@ -14,7 +14,7 @@ class Controller:
         target_len: int,
         Q: np.ndarray | int | float | None = None,
         R: np.ndarray | int | float | None = None,
-        control_constrain_fkt: Callable | None = None,
+        input_constrain_fkt: Callable | None = None,
         max_pgm_iterations=300,
         pgm_tolerance=1e-6,
     ) -> None:
@@ -25,13 +25,13 @@ class Controller:
         Args:
             u_d: Control inputs from an offline procedure.
             y_d: System outputs from an offline procedure.
-            T_ini: Number of initial control inputs and system outputs to initialize the state.
-            target_len: Length of the target system outputs.
+            T_ini: Number of system in- and outputs to initialize the state.
+            target_len: Length of the target system outputs, optimal control tries to match.
             Q: Output cost matrix. Defaults to identity matrix.
-               If int or float, it is used as a scalar to multiply the identity matrix.
+               If int or float, diagonal matrix with this value.
             R: Control cost matrix. Defaults to zero matrix.
-                If int or float, it is used as a scalar to multiply the identity matrix.
-            control_constrain_fkt: Function that constrains the control inputs.
+                If int or float, diagonal matrix with this value.
+            input_constrain_fkt: Function that constrains the control inputs.
             max_pgm_iterations: Maximum number of iterations of the projected gradient method (PGM)
                                 used to solve the constrained optimization problem.
             pgm_tolerance: Tolerance for the PGM algorithm.
@@ -68,7 +68,7 @@ class Controller:
         self.y_ini: collections.deque[np.ndarray] = collections.deque(maxlen=T_ini)
         self.Q = Q
         self.R = R
-        self.control_constrain_fkt = control_constrain_fkt
+        self.input_constrain_fkt = input_constrain_fkt
         self.max_pgm_iterations = max_pgm_iterations
         self.pgm_tolerance = pgm_tolerance
 
@@ -148,12 +148,12 @@ class Controller:
         w = self.M_u.T @ self.Q @ (target - self.M_x @ x)
         u_star = np.linalg.lstsq(self.G, w)[0]
 
-        if self.control_constrain_fkt is not None:
+        if self.input_constrain_fkt is not None:
             u_star = projected_gradient_method(
                 self.G,
                 u_star,
                 w,
-                self.control_constrain_fkt,
+                self.input_constrain_fkt,
                 self.max_pgm_iterations,
                 self.pgm_tolerance,
             )

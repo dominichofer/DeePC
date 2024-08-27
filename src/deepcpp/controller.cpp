@@ -17,18 +17,16 @@ Controller::Controller(
     const std::vector<VectorXd> &y_d,
     int T_ini,
     int target_size,
-    MatrixXd Q,
-    MatrixXd R,
-    std::function<VectorXd(const VectorXd &)> control_constrain_fkt,
+    std::variant<MatrixXd, double> Q_,
+    std::variant<MatrixXd, double> R_,
+    std::function<VectorXd(const VectorXd &)> input_constrain_fkt,
     int max_pgm_iterations,
     double pgm_tolerance)
     : T_ini(T_ini)
     , target_size(target_size)
     , u_ini(T_ini)
     , y_ini(T_ini)
-    , Q(Q)
-    , R(R)
-    , control_constrain_fkt(control_constrain_fkt)
+    , input_constrain_fkt(input_constrain_fkt)
     , max_pgm_iterations(max_pgm_iterations)
     , pgm_tolerance(pgm_tolerance)
     , input_dims(u_d.front().size())
@@ -41,6 +39,18 @@ Controller::Controller(
 
     check_dimensions(u_d, "u_d", offline_size, input_dims);
     check_dimensions(y_d, "y_d", offline_size, output_dims);
+
+    const int Q_size = target_size * output_dims;
+    if (std::holds_alternative<double>(Q_))
+        Q = std::get<double>(Q_) * MatrixXd::Identity(Q_size, Q_size);
+    else
+        Q = std::get<MatrixXd>(Q_);
+
+    const int R_size = target_size * input_dims;
+    if (std::holds_alternative<double>(R_))
+        R = std::get<double>(R_) * MatrixXd::Identity(R_size, R_size);
+    else
+        R = std::get<MatrixXd>(R_);
 
     // Check Q
     if (Q.rows() != Q.cols())
@@ -103,10 +113,10 @@ Controller::Controller(
     const std::vector<VectorXd> &y_d,
     int T_ini,
     int target_size,
-    std::function<VectorXd(const VectorXd &)> control_constrain_fkt,
+    std::function<VectorXd(const VectorXd &)> input_constrain_fkt,
     int max_pgm_iterations,
     double pgm_tolerance)
-    : Controller(u_d, y_d, T_ini, target_size, MatrixXd::Identity(target_size * y_d.front().size(), target_size * y_d.front().size()), MatrixXd::Zero(target_size * u_d.front().size(), target_size * u_d.front().size()), control_constrain_fkt, max_pgm_iterations, pgm_tolerance)
+    : Controller(u_d, y_d, T_ini, target_size, 1.0, 0.0, input_constrain_fkt, max_pgm_iterations, pgm_tolerance)
 {
 }
 
@@ -141,12 +151,12 @@ std::vector<VectorXd> Controller::apply(const std::vector<VectorXd> &target)
     auto w = M_u.transpose() * Q * (target_ - M_x * x);
     auto u_star = G.ldlt().solve(w).eval();
 
-    if (control_constrain_fkt != nullptr)
+    if (input_constrain_fkt != nullptr)
         u_star = projected_gradient_method(
             G,
             u_star,
             w,
-            control_constrain_fkt,
+            input_constrain_fkt,
             max_pgm_iterations,
             pgm_tolerance);
 

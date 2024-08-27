@@ -23,7 +23,7 @@ def deePC(
     target: list | np.ndarray,
     Q: np.ndarray | int | float | None = None,
     R: np.ndarray | int | float | None = None,
-    control_constrain_fkt: Callable | None = None,
+    input_constrain_fkt: Callable | None = None,
     max_pgm_iterations=300,
     pgm_tolerance=1e-6,
 ) -> np.ndarray:
@@ -36,12 +36,12 @@ def deePC(
         y_d: System outputs from an offline procedure.
         u_ini: Control inputs to initialize the state.
         y_ini: System outputs to initialize the state.
-        target: Target system outputs, optimal control tries to reach.
+        target: Target system outputs, optimal control tries to match.
         Q: Output cost matrix. Defaults to identity matrix.
-           If int or float, it is used as a scalar to multiply the identity matrix.
+           If int or float, diagonal matrix with this value.
         R: Control cost matrix. Defaults to zero matrix.
-           If int or float, it is used as a scalar to multiply the identity matrix.
-        control_constrain_fkt: Function that constrains the control inputs.
+           If int or float, diagonal matrix with this value.
+        input_constrain_fkt: Function that constrains the system inputs.
         max_pgm_iterations: Maximum number of iterations of the projected gradient method (PGM)
                             used to solve the constrained optimization problem.
         pgm_tolerance: Tolerance for the PGM algorithm.
@@ -125,7 +125,7 @@ def deePC(
     w = M_u.T @ Q @ (target - M_x @ x)
     u_star = np.linalg.lstsq(G, w)[0]
 
-    if control_constrain_fkt is not None:
-        u_star = projected_gradient_method(G, u_star, w, control_constrain_fkt, max_pgm_iterations, pgm_tolerance)
+    if input_constrain_fkt is not None:
+        u_star = projected_gradient_method(G, u_star, w, input_constrain_fkt, max_pgm_iterations, pgm_tolerance)
 
     return u_star.reshape(-1, input_dims)
