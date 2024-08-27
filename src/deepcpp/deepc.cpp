@@ -19,9 +19,9 @@ std::vector<VectorXd> deePC(
     const std::vector<VectorXd> &u_ini,
     const std::vector<VectorXd> &y_ini,
     const std::vector<VectorXd> &target,
-    const MatrixXd &Q,
-    const MatrixXd &R,
-    std::function<VectorXd(const VectorXd &)> control_constrain_fkt,
+    std::variant<MatrixXd, double> Q_,
+    std::variant<MatrixXd, double> R_,
+    std::function<VectorXd(const VectorXd &)> input_constrain_fkt,
     int max_pgm_iterations,
     double pgm_tolerance)
 {
@@ -37,11 +37,25 @@ std::vector<VectorXd> deePC(
     check_dimensions(y_ini, "y_ini", T_ini, output_dims);
     check_dimensions(target, "target", target_size, output_dims);
 
+    MatrixXd Q;
+    const int Q_size = target_size * output_dims;
+    if (std::holds_alternative<double>(Q_))
+        Q = std::get<double>(Q_) * MatrixXd::Identity(Q_size, Q_size);
+    else
+        Q = std::get<MatrixXd>(Q_);
+
+    MatrixXd R;
+    const int R_size = target_size * input_dims;
+    if (std::holds_alternative<double>(R_))
+        R = std::get<double>(R_) * MatrixXd::Identity(R_size, R_size);
+    else
+        R = std::get<MatrixXd>(R_);
+
     // Check Q
     if (Q.rows() != Q.cols())
         throw std::invalid_argument("Q must be a square matrix. Q.rows()=" + std::to_string(Q.rows()) + ", Q.cols()=" + std::to_string(Q.cols()));
-    if (Q.rows() != target_size * output_dims)
-        throw std::invalid_argument("Q.rows()=" + std::to_string(Q.rows()) + " but should be " + std::to_string(target_size * output_dims) + ".");
+    if (Q.rows() != Q_size)
+        throw std::invalid_argument("Q.rows()=" + std::to_string(Q.rows()) + " but should be " + std::to_string(Q_size) + ".");
 
     // Check R
     if (R.rows() != R.cols())
@@ -96,12 +110,12 @@ std::vector<VectorXd> deePC(
     auto w = M_u_T * Q * (target_ - M_x * x);
     auto u_star = G.ldlt().solve(w).eval();
 
-    if (control_constrain_fkt != nullptr)
+    if (input_constrain_fkt != nullptr)
         u_star = projected_gradient_method(
             G,
             u_star,
             w,
-            control_constrain_fkt,
+            input_constrain_fkt,
             max_pgm_iterations,
             pgm_tolerance);
 
@@ -109,24 +123,14 @@ std::vector<VectorXd> deePC(
 }
 
 std::vector<VectorXd> deePC(
-    const std::vector<VectorXd> &u_d,
-    const std::vector<VectorXd> &y_d,
-    const std::vector<VectorXd> &u_ini,
-    const std::vector<VectorXd> &y_ini,
-    const std::vector<VectorXd> &target_output,
-    std::function<VectorXd(const VectorXd &)> control_constrain_fkt,
+    const std::vector<VectorXd>& u_d,
+    const std::vector<VectorXd>& y_d,
+    const std::vector<VectorXd>& u_ini,
+    const std::vector<VectorXd>& y_ini,
+    const std::vector<VectorXd>& target,
+    std::function<VectorXd(const VectorXd&)> input_constrain_fkt,
     int max_pgm_iterations,
     double pgm_tolerance)
 {
-    const int target_size = target_output.size();
-    const int input_dims = u_d.front().size();
-    const int output_dims = y_d.front().size();
-
-    const int Q_size = target_size * output_dims;
-    auto Q = MatrixXd::Identity(Q_size, Q_size);
-
-    const int R_size = target_size * input_dims;
-    auto R = MatrixXd::Zero(R_size, R_size);
-
-    return deePC(u_d, y_d, u_ini, y_ini, target_output, Q, R, control_constrain_fkt, max_pgm_iterations, pgm_tolerance);
+    return deePC(u_d, y_d, u_ini, y_ini, target, 1.0, 0.0, input_constrain_fkt, max_pgm_iterations, pgm_tolerance);
 }
