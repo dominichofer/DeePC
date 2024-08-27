@@ -31,7 +31,7 @@ To run the provided tests, execute `make -C build test`.<br>
 
 ## Usage
 The DeePC algorithm calculates the optimal control for a given system and a target.<br>
-To grasp the system it requires data from an offline procedure in the form of system input data `u_d` and system output data `y_d`.<br>
+To grasp the system it requires data from an offline procedure in the form of system input data `u_d` and system output data `y_d`.
 To grasp the current stat of the system it needs initialization data in the form of system input data `u_ini` and system output data `y_ini`.<br>
 With this data it solves
 ```math
@@ -48,11 +48,12 @@ where
 ```math
 \begin{pmatrix} U_p \\ U_f \end{pmatrix} := \mathcal{H}_{T_{\text{ini}}+N}(u_d), \begin{pmatrix} Y_p \\ Y_f \end{pmatrix} := \mathcal{H}_{T_{\text{ini}}+N}(y_d)
 ```
-and `H` denotes the hankel matrix. (Note that this differs slightly from the paper.)<br>
-The resulting `u` is the optimal control to reach the target `r`.
+and `H` denotes the hankel matrix.<br>
+Note that this is more general than described in the paper.<br>
+The resulting `u` is the optimal control to reach the target `r` in the context of the optimization problem.
 
 ### Python
-The Python package provides two implementations of this, the stand-alone algorithm `deePC` and wrapped in a controller.<br>
+The Python package provides two implementations of this, the stand-alone algorithm `deePC` and a controller.<br>
 For reference applications of the controller see `example_1d.ipynb` and `example_3d.ipynb`.
 ### C++
-(will follow soon)
+The C++ library provides two implementations of this, the stand-alone algorithm `deePC` and a controller.<br>
