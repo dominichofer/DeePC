@@ -48,9 +48,8 @@ where
 ```math
 \begin{pmatrix} U_p \\ U_f \end{pmatrix} := \mathcal{H}_{T_{\text{ini}}+N}(u_d), \begin{pmatrix} Y_p \\ Y_f \end{pmatrix} := \mathcal{H}_{T_{\text{ini}}+N}(y_d)
 ```
-and `H` denotes the hankel matrix.<br>
-The resulting `u` is the optimal control to reach the target `r`.<br>
-(Note that this differs slightly from the paper.)
+and `H` denotes the hankel matrix. (Note that this differs slightly from the paper.)<br>
+The resulting `u` is the optimal control to reach the target `r`.
 
 ### Python
 The Python package provides two implementations of this, the stand-alone algorithm `deePC` and wrapped in a controller.<br>
