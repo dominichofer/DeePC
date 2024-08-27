@@ -21,6 +21,7 @@ def deePC(
     u_ini: list | np.ndarray,
     y_ini: list | np.ndarray,
     target: list | np.ndarray,
+    u_0: list | np.ndarray | None = None,
     Q: np.ndarray | int | float | None = None,
     R: np.ndarray | int | float | None = None,
     input_constrain_fkt: Callable | None = None,
@@ -37,6 +38,7 @@ def deePC(
         u_ini: Control inputs to initialize the state.
         y_ini: System outputs to initialize the state.
         target: Target system outputs, optimal control tries to match.
+        u_0: Control input offset, defaults to zero vector.
         Q: Output cost matrix. Defaults to identity matrix.
            If int or float, diagonal matrix with this value.
         R: Control cost matrix. Defaults to zero matrix.
@@ -63,6 +65,12 @@ def deePC(
     check_dimensions(u_ini, "u_ini", T_ini, input_dims)
     check_dimensions(y_ini, "y_ini", T_ini, output_dims)
     check_dimensions(target, "target", target_len, output_dims)
+
+    if u_0 is None:
+        u_0 = np.zeros((target_len, input_dims))
+    else:
+        u_0 = as_column_vector(u_0)
+    check_dimensions(u_0, "u_0", target_len, input_dims)
 
     Q_size = target_len * output_dims
     if isinstance(Q, (int, float)):
@@ -119,10 +127,10 @@ def deePC(
     # https://en.wikipedia.org/wiki/Ridge_regression#Generalized_Tikhonov_regularization
     # minimize: ||y - r||_Q^2 + ||u||_R^2
     # subject to: M_u * u = y - M_x * x
-    # This has an explicit solution u_star = (M_u^T * Q * M_u + R)^-1 * (M_u^T * Q * y).
+    # This has an explicit solution u_star = (M_u^T * Q * M_u + R)^-1 * (M_u^T * Q * y + R * u_0).
 
     G = M_u.T @ Q @ M_u + R
-    w = M_u.T @ Q @ (target - M_x @ x)
+    w = M_u.T @ Q @ (target - M_x @ x) + R @ u_0
     u_star = np.linalg.lstsq(G, w)[0]
 
     if input_constrain_fkt is not None:

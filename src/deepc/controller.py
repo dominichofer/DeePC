@@ -12,6 +12,7 @@ class Controller:
         y_d: list | np.ndarray,
         T_ini: int,
         target_len: int,
+        u_0: list | np.ndarray | None = None,
         Q: np.ndarray | int | float | None = None,
         R: np.ndarray | int | float | None = None,
         input_constrain_fkt: Callable | None = None,
@@ -27,6 +28,7 @@ class Controller:
             y_d: System outputs from an offline procedure.
             T_ini: Number of system in- and outputs to initialize the state.
             target_len: Length of the target system outputs, optimal control tries to match.
+            u_0: Control input offset, defaults to zero vector.
             Q: Output cost matrix. Defaults to identity matrix.
                If int or float, diagonal matrix with this value.
             R: Control cost matrix. Defaults to zero matrix.
@@ -48,6 +50,12 @@ class Controller:
         check_dimensions(u_d, "u_d", offline_len, self.input_dims)
         check_dimensions(y_d, "y_d", offline_len, self.output_dims)
 
+        if u_0 is None:
+            u_0 = np.zeros((target_len, self.input_dims))
+        else:
+            u_0 = as_column_vector(u_0)
+        check_dimensions(u_0, "u_0", target_len, self.input_dims)
+
         Q_size = target_len * self.output_dims
         if isinstance(Q, (int, float)):
             Q = np.eye(Q_size) * Q
@@ -66,6 +74,7 @@ class Controller:
         self.target_len = target_len
         self.u_ini: collections.deque[np.ndarray] = collections.deque(maxlen=T_ini)
         self.y_ini: collections.deque[np.ndarray] = collections.deque(maxlen=T_ini)
+        self.u_0 = u_0
         self.Q = Q
         self.R = R
         self.input_constrain_fkt = input_constrain_fkt
@@ -109,7 +118,7 @@ class Controller:
         # https://en.wikipedia.org/wiki/Ridge_regression#Generalized_Tikhonov_regularization
         # minimize: ||y - r||_Q^2 + ||u||_R^2
         # subject to: M_u * u = y - M_x * x
-        # This has an explicit solution u_star = (M_u^T * Q * M_u + R)^-1 * (M_u^T * Q * y).
+        # This has an explicit solution u_star = (M_u^T * Q * M_u + R)^-1 * (M_u^T * Q * y + R * u_0).
 
         # We precompute the matrix G = M_u^T * Q * M_u + R.
         self.G = self.M_u.T @ self.Q @ self.M_u + self.R
@@ -145,7 +154,7 @@ class Controller:
         target = np.concatenate(target).reshape(-1, 1)
 
         x = np.concatenate([self.u_ini, self.y_ini]).reshape(-1, 1)
-        w = self.M_u.T @ self.Q @ (target - self.M_x @ x)
+        w = self.M_u.T @ self.Q @ (target - self.M_x @ x) + self.R @ self.u_0
         u_star = np.linalg.lstsq(self.G, w)[0]
 
         if self.input_constrain_fkt is not None:
