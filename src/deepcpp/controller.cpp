@@ -40,14 +40,12 @@ Controller::Controller(
     check_dimensions(u_d, "u_d", offline_size, input_dims);
     check_dimensions(y_d, "y_d", offline_size, output_dims);
 
-    MatrixXd Q;
     const int Q_size = target_size * output_dims;
     if (std::holds_alternative<double>(Q_))
         Q = std::get<double>(Q_) * MatrixXd::Identity(Q_size, Q_size);
     else
         Q = std::get<MatrixXd>(Q_);
 
-    MatrixXd R;
     const int R_size = target_size * input_dims;
     if (std::holds_alternative<double>(R_))
         R = std::get<double>(R_) * MatrixXd::Identity(R_size, R_size);
