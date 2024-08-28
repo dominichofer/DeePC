@@ -1,6 +1,7 @@
 import collections
 from typing import Callable
 import numpy as np
+from numpy.linalg import matrix_rank, svd
 from .math import hankel_matrix, projected_gradient_method
 from .deepc import as_column_vector, check_dimensions
 
@@ -159,3 +160,96 @@ class Controller:
             )
 
         return u_star.reshape(-1, self.input_dims)
+
+    
+
+    #todo figure this out
+    def apply_ref_trajecotry(self, target: list | np.ndarray) -> list[float] | None:
+        """
+        Returns the optimal control for a given reference trajectory also using steady state input
+        or None if the controller is not initialized.
+        Args:
+            target: Target system outputs, optimal control tries to reach.
+        """
+        from scipy.linalg import solve  # or numpy.linalg
+        if not self.is_initialized():
+            return None
+
+        # get the u_ref
+        Mu_bar = np.zeros_like(self.M_u)
+        Mu_bar[:,:self.M_x.shape[1]] = self.M_x
+        u_bar = solve(Mu_bar+self.M_u, target-self.M_x@target[:self.T_ini])
+        if not np.allclose(self.M_x@np.block([[u_bar[:self.T_ini,:]],[target[:self.T_ini,:]]]) + self.M_u@u_bar,target):
+            print('u_bar problem')
+
+
+        target = as_column_vector(target)
+        check_dimensions(target, "target", self.target_len, self.output_dims)
+
+        # Flatten
+        target = np.concatenate(target).reshape(-1, 1)
+
+        x = np.concatenate([self.u_ini, self.y_ini]).reshape(-1, 1)
+        w = self.M_u.T @ self.Q @ (target - self.M_x @ x) + self.R*u_bar
+        u_star = np.linalg.lstsq(self.G, w)[0]
+
+        if self.input_constrain_fkt is not None:
+            u_star = projected_gradient_method(
+                self.G,
+                u_star,
+                w,
+                self.input_constrain_fkt,
+                self.max_pgm_iterations,
+                self.pgm_tolerance,
+            )
+
+        return u_star.reshape(-1, self.input_dims)
+
+
+
+
+
+
+
+    def assess_matrix_quality(matrix):
+        """ Assess the quality of the matrix using rank, condition number, and singular values. """
+        rank = matrix_rank(matrix)
+        _, s, _ = svd(matrix)
+        cond_number = np.linalg.cond(matrix)
+        energy_retained = np.cumsum(s**2) / np.sum(s**2)
+        
+        return rank, cond_number, s, energy_retained
+
+    def suggest_dimensions(U_p, U_f, Y_p, Y_f, energy_threshold=0.99):
+        """ Suggest optimal dimensions based on the energy retained in the principal components. """
+        # Assess U_p and U_f
+        rank_U_p, cond_U_p, s_U_p, energy_U_p = assess_matrix_quality(U_p)
+        rank_U_f, cond_U_f, s_U_f, energy_U_f = assess_matrix_quality(U_f)
+        
+        # Assess Y_p and Y_f
+        rank_Y_p, cond_Y_p, s_Y_p, energy_Y_p = assess_matrix_quality(Y_p)
+        rank_Y_f, cond_Y_f, s_Y_f, energy_Y_f = assess_matrix_quality(Y_f)
+        
+        # Suggest number of dimensions to retain
+        suggested_dims_U = np.searchsorted(energy_U_p, energy_threshold) + 1
+        suggested_dims_Y = np.searchsorted(energy_Y_p, energy_threshold) + 1
+        
+        print("Assessment of U_p:")
+        print(f"Dimensions: {U_p.shape}")
+        print(f"Rank: {rank_U_p}, Condition Number: {cond_U_p}")
+        print(f"Suggested dimensions (U): {suggested_dims_U} (retaining {energy_threshold*100}% energy)")
+        
+        print("Assessment of U_f:")
+        print(f"Dimensions: {U_f.shape}")
+        print(f"Rank: {rank_U_f}, Condition Number: {cond_U_f}")
+        
+        print("Assessment of Y_p:")
+        print(f"Dimensions: {Y_p.shape}")
+        print(f"Rank: {rank_Y_p}, Condition Number: {cond_Y_p}")
+        print(f"Suggested dimensions (Y): {suggested_dims_Y} (retaining {energy_threshold*100}% energy)")
+        
+        print("Assessment of Y_f:")
+        print(f"Dimensions: {Y_f.shape}")
+        print(f"Rank: {rank_Y_f}, Condition Number: {cond_Y_f}")
+        
+        return suggested_dims_U, suggested_dims_Y

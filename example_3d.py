@@ -48,9 +48,9 @@ prbs_sequence = generate_prbs_with_shift(length, num_channels, levels, shift, sa
 
 # Define a system
 system = RandomNoiseDiscreteLTI(
-    A=[[0.8, 0.0, 0.1], 
-       [0.0, 0.8, 0.0], 
-       [0.1, 0.0, 0.8]],
+    A=[[0.8, 0.05, 0.1], 
+       [0.02, 0.8, 0.1], 
+       [0.01, 0.02, 0.7]],
     B=[[0.3, 0, 0], 
        [0, 0.3, 0], 
        [0, 0, 0.3]],
@@ -66,8 +66,8 @@ system = RandomNoiseDiscreteLTI(
 
 print( "is it stable " ,system.is_stable())
 
-max_input = 4
-min_input = 0
+max_input = 5
+min_input = -2
 
 # Gather offline data
 N = 1
@@ -120,7 +120,7 @@ r_len = 1
 
 # Define the controller
 constraint = lambda u: np.clip(u, min_input, max_input)
-controller = Controller(u_d, y_d, T_ini, r_len,R= np.eye((r_len*3))*0.01, control_constrain_fkt=constraint )
+controller = Controller(u_d, y_d, T_ini, r_len, 1 , 0.001, input_constrain_fkt=constraint )
 
 # Reset the system
 # to sepereate the offline data from the online data
@@ -142,7 +142,8 @@ y_online = []
 r_online = [[0, 5, 0]] * 200 + [[0, 0, 5]] * 200 + [[5, 4, 3]] * 200 + [[0, 7, 2]] * 200
 for i in range(len(r_online) - r_len):
     r = r_online[i: i + r_len]
-    u = controller.apply(r, u_ss)[0]
+    #print("u ss : ",[r, u_ss])
+    u = controller.apply(r)[0]#u_ss
     y = system.apply(u)#
     controller.update(u, y)
     u_online.append(u)
