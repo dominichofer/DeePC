@@ -80,6 +80,8 @@ class Controller:
         Y_p = Y[: T_ini * self.output_dims, :]  # past
         Y_f = Y[T_ini * self.output_dims :, :]  # future
 
+        self.suggest_dimensions(U_p, U_f, Y_p, Y_f)
+
         # Now solving
         # minimize: ||y - r||_Q^2 + ||u||_R^2
         # subject to: [U_p; Y_p; U_f; Y_f] * g = [u_ini; y_ini; u; y]
@@ -162,7 +164,6 @@ class Controller:
         return u_star.reshape(-1, self.input_dims)
 
     
-
     #todo figure this out
     def apply_ref_trajecotry(self, target: list | np.ndarray) -> list[float] | None:
         """
@@ -206,12 +207,7 @@ class Controller:
         return u_star.reshape(-1, self.input_dims)
 
 
-
-
-
-
-
-    def assess_matrix_quality(matrix):
+    def assess_matrix_quality(self,matrix):
         """ Assess the quality of the matrix using rank, condition number, and singular values. """
         rank = matrix_rank(matrix)
         _, s, _ = svd(matrix)
@@ -220,15 +216,16 @@ class Controller:
         
         return rank, cond_number, s, energy_retained
 
-    def suggest_dimensions(U_p, U_f, Y_p, Y_f, energy_threshold=0.99):
+
+    def suggest_dimensions(self,U_p, U_f, Y_p, Y_f, energy_threshold=0.99):
         """ Suggest optimal dimensions based on the energy retained in the principal components. """
         # Assess U_p and U_f
-        rank_U_p, cond_U_p, s_U_p, energy_U_p = assess_matrix_quality(U_p)
-        rank_U_f, cond_U_f, s_U_f, energy_U_f = assess_matrix_quality(U_f)
+        rank_U_p, cond_U_p, s_U_p, energy_U_p = self.assess_matrix_quality(U_p)
+        rank_U_f, cond_U_f, s_U_f, energy_U_f = self.assess_matrix_quality(U_f)
         
         # Assess Y_p and Y_f
-        rank_Y_p, cond_Y_p, s_Y_p, energy_Y_p = assess_matrix_quality(Y_p)
-        rank_Y_f, cond_Y_f, s_Y_f, energy_Y_f = assess_matrix_quality(Y_f)
+        rank_Y_p, cond_Y_p, s_Y_p, energy_Y_p = self.assess_matrix_quality(Y_p)
+        rank_Y_f, cond_Y_f, s_Y_f, energy_Y_f = self.assess_matrix_quality(Y_f)
         
         # Suggest number of dimensions to retain
         suggested_dims_U = np.searchsorted(energy_U_p, energy_threshold) + 1
