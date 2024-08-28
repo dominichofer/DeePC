@@ -1,7 +1,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from deepc import Controller, RandomNoisyLTI
+from deepc import Controller, RandomNoiseDiscreteLTI
 
 from scipy.signal import max_len_seq
 
@@ -47,13 +47,13 @@ samples_n = 6
 prbs_sequence = generate_prbs_with_shift(length, num_channels, levels, shift, samples_n)
 
 # Define a system
-system = RandomNoisyLTI(
-    A=[[0.8, 0.0, 0.0], 
-       [0.0, 0.84, 0.0], 
-       [0.0, 0.0, 0.81]],
-    B=[[0.4, 0, 0], 
-       [0, 0.31, 0], 
-       [0, 0, 0.30]],
+system = RandomNoiseDiscreteLTI(
+    A=[[0.8, 0.0, 0.1], 
+       [0.0, 0.8, 0.0], 
+       [0.1, 0.0, 0.8]],
+    B=[[0.3, 0, 0], 
+       [0, 0.3, 0], 
+       [0, 0, 0.3]],
     C=[[1, 0, 0], 
        [0, 1, 0], 
        [0, 0, 1]],

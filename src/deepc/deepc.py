@@ -187,9 +187,13 @@ class Controller:
             for y in y_ini:
                 self.y_ini.append(np.array(y))
         if Q is None:
-            Q = np.eye(r_len * y_ndim)*10
+            Q = np.eye(r_len * y_ndim)
+        elif Q.shape != np.eye(r_len * y_ndim).shape:
+            Q = np.eye(r_len * y_ndim)*Q[0,0]
         if R is None:
-            R = np.eye((r_len * u_ndim))*0.0001
+            R = np.eye((r_len * u_ndim))
+        elif R.shape != np.eye(r_len * u_ndim).shape:
+            R = np.eye(r_len * u_ndim)*R[0,0]
 
         self.Q = Q
         self.R = R
@@ -238,8 +242,38 @@ class Controller:
         # We precompute the matrix G = M_u^T * Q * M_u + R.
         self.G = self.M_u.T @ self.Q @ self.M_u + self.R
 
-
         suggested_dims_U, suggested_dims_Y = suggest_dimensions(U_p, U_f, Y_p, Y_f, energy_threshold=0.999)
+
+    def predict(
+        y_d: list | np.ndarray,
+        y_ini: list | np.ndarray,
+        length: int,) -> list[float]:
+
+        y_d = np.array(y_d)
+        shape = y_d.shape
+        if y_d.ndim == 1:
+            y_d = y_d.reshape(-1, 1)
+        y_ini = np.array(y_ini)
+        if y_ini.ndim == 1:
+            y_ini = y_ini.reshape(-1, 1)
+
+        assert y_d.shape[1] == y_ini.shape[1], "Elements of y_d and y_ini must have the same dimension."
+
+        T_ini = len(y_ini)
+        y_ndim = y_d.shape[1] if y_d.ndim == 2 else 1
+
+        Y = hankel_matrix(T_ini + length, y_d)
+        Y_p = Y[: T_ini * y_ndim, :]  # past
+        Y_f = Y[T_ini * y_ndim :, :]  # future
+
+        y_star = Y_f @ np.linalg.pinv(Y_p) @ y_ini.reshape(-1, 1)
+
+        if len(shape) == 1:
+            y_star = y_star[:, 0]
+        else:
+            y_star = y_star.reshape(-1, shape[1])
+        return y_star.tolist()
+
 
     def is_initialized(self) -> bool:
         "Returns whether the internal state is initialized."
@@ -297,15 +331,8 @@ class Controller:
             u_star = u_star[:, 0]
         else:
             u_star = u_star.reshape(-1, self.u_ini[0].shape[0])
-            #print(u_star)
-
-        #self.u_ss = u_star[0]*0.2 + self.u_ss*0.8# dirty try
-        #u_ss = np.linalg.pinv(self.M_u) @ r #(r - self.M_x @ x) # we dont have xss so using x
-
-        #print("u filter ", self.u_ss, " vs computed ", u_ss)
 
         return u_star.tolist()
-
 
 
 from numpy.linalg import matrix_rank, svd
@@ -353,5 +380,4 @@ def suggest_dimensions(U_p, U_f, Y_p, Y_f, energy_threshold=0.99):
     print(f"Rank: {rank_Y_f}, Condition Number: {cond_Y_f}")
     
     return suggested_dims_U, suggested_dims_Y
-
 
