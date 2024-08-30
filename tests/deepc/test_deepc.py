@@ -1,59 +1,15 @@
 import unittest
 import numpy as np
-from deepc import linear_chirp, deePC, Controller, DiscreteLTI
+from deepc import deePC
+from helpers import create_1D_in_1D_out_LTI, create_2D_in_3D_out_LTI, gather_offline_data
 
 
-def lti_1D_input_1D_output() -> DiscreteLTI:
-    "LTI system with 1D input and 1D output"
-    system = DiscreteLTI(
-        A=[[0.9, -0.2], [0.7, 0.1]],
-        B=[[0.1], [0]],
-        C=[[1, 0]],
-        D=[[0.1]],
-        x_ini=[1, 1],
-    )
-    assert system.input_dim == 1
-    assert system.output_dim == 1
-    assert system.is_controllable()
-    assert system.is_observable()
-    assert system.is_stable()
-    return system
-
-
-def lti_2D_input_3D_output() -> DiscreteLTI:
-    "LTI system with 3D input and 2D output"
-    system = DiscreteLTI(
-        A=[[0.5, 0.1, 0], [0.1, 0.5, 0.1], [0, 0.1, 0.5]],
-        B=[[0.1, 0], [0.1, 0.5], [0, 0.1]],
-        C=[[1, 0, 0], [0, 1, 1], [0, 0, 1]],
-        D=[[0, 0], [0, 0], [0, 0]],
-        x_ini=[0, 0, 0],
-    )
-    assert system.input_dim == 2
-    assert system.output_dim == 3
-    assert system.is_controllable()
-    assert system.is_observable()
-    assert system.is_stable()
-    return system
-
-
-def gather_offline_data(system: DiscreteLTI) -> tuple:
-    SAMPLES = 1_000
-    if system.input_dim == 1:
-        u_d = linear_chirp(0, SAMPLES / 2, SAMPLES)
-    else:
-        chirps = [linear_chirp(0, SAMPLES / 2, SAMPLES, 0.1 * i) for i in range(system.input_dim)]
-        u_d = list(zip(*chirps))  # Transpose the list of chirp signals
-    y_d = system.apply_multiple(u_d)
-    return u_d, y_d
-
-
-class Test_deePC_1D_input_1D_output(unittest.TestCase):
+class Test_1D_in_1D_out_LTI(unittest.TestCase):
     def setUp(self):
-        self.system = lti_1D_input_1D_output()
+        self.system = create_1D_in_1D_out_LTI()
 
         # Offline data
-        self.u_d, self.y_d = gather_offline_data(self.system)
+        self.u_d, self.y_d = gather_offline_data(self.system, samples=1_000)
 
         # Initial conditions
         self.u_ini = [1] * 20
@@ -65,6 +21,8 @@ class Test_deePC_1D_input_1D_output(unittest.TestCase):
     def test_unconstrained(self):
         u_star = deePC(self.u_d, self.y_d, self.u_ini, self.y_ini, self.target)
 
+        # Apply the control input to the system
+        # to see if the output matches the target
         y_star = self.system.apply_multiple(u_star)
         np.testing.assert_array_almost_equal(y_star, self.target)
 
@@ -78,29 +36,33 @@ class Test_deePC_1D_input_1D_output(unittest.TestCase):
             input_constrain_fkt=lambda u: np.clip(u, -15, 15),
         )
 
+        # Apply the control input to the system
+        # to see if the output matches the target
         y_star = self.system.apply_multiple(u_star)
         np.testing.assert_array_almost_equal(y_star, self.target)
 
 
-class Test_deePC_2D_input_3D_output(unittest.TestCase):
+class Test_2D_in_3D_out_LTI(unittest.TestCase):
     def setUp(self):
-        self.system = lti_2D_input_3D_output()
+        self.system = create_2D_in_3D_out_LTI()
 
         # Offline data
-        self.u_d, self.y_d = gather_offline_data(self.system)
+        self.u_d, self.y_d = gather_offline_data(self.system, samples=1_000)
 
         # Initial conditions
         self.u_ini = [(1, 1)] * 20
         self.y_ini = self.system.apply_multiple(self.u_ini)
 
         # Reference trajectory
-        self.r = [(0.21, 0.9, 0.36)]
+        self.target = [(0.21, 0.9, 0.36)]
 
     def test_unconstrained(self):
-        u_star = deePC(self.u_d, self.y_d, self.u_ini, self.y_ini, self.r)
+        u_star = deePC(self.u_d, self.y_d, self.u_ini, self.y_ini, self.target)
 
+        # Apply the control input to the system
+        # to see if the output matches the target
         y_star = self.system.apply_multiple(u_star)
-        np.testing.assert_array_almost_equal(y_star, self.r, decimal=2)
+        np.testing.assert_array_almost_equal(y_star, self.target, decimal=2)
 
     def test_constrained(self):
         u_star = deePC(
@@ -108,15 +70,22 @@ class Test_deePC_2D_input_3D_output(unittest.TestCase):
             self.y_d,
             self.u_ini,
             self.y_ini,
-            self.r,
+            self.target,
             input_constrain_fkt=lambda u: np.clip(u, -15, 15),
         )
 
+        # Apply the control input to the system
+        # to see if the output matches the target
         y_star = self.system.apply_multiple(u_star)
-        np.testing.assert_array_almost_equal(y_star, self.r, decimal=2)
+        np.testing.assert_array_almost_equal(y_star, self.target, decimal=2)
 
 
-class deePC_simple_system_1D_input_1D_output(unittest.TestCase):
+class Test_types(unittest.TestCase):
+    """
+    Test the different types of input data that can be used with deePC
+    on a trivial 1D input 1D output system.
+    """
+
     def test_int(self):
         u_d = [1, 2, 3, 4, -5, 6, 7, 8, 9, 10]
         y_d = [1, 2, 3, 4, -5, 6, 7, 8, 9, 10]
@@ -214,7 +183,7 @@ class deePC_simple_system_1D_input_1D_output(unittest.TestCase):
         np.testing.assert_array_almost_equal(u_star, u)
 
 
-class deePC_simple_system_2D_input_3D_output(unittest.TestCase):
+class Test_2D_types(unittest.TestCase):
     def test_tuple(self):
         u_d = [(x, y) for x in range(3) for y in range(3)]
         y_d = [(x, y, x + y) for x, y in u_d]
@@ -262,51 +231,6 @@ class deePC_simple_system_2D_input_3D_output(unittest.TestCase):
         u_star = deePC(u_d, y_d, u_ini, y_ini, r)
 
         np.testing.assert_array_almost_equal(u_star, u)
-
-
-def warm_up_controller(controller: Controller, system: DiscreteLTI, u: list | np.ndarray) -> None:
-    "Warm up the controller until it is initialized"
-    while not controller.is_initialized():
-        y = system.apply(u)
-        controller.update(u, y)
-
-
-def control_system(controller: Controller, system: DiscreteLTI, target: list, time_steps: int) -> float:
-    """
-    Control the system for a given number of time steps.
-    Returns the output of the system after the last time step.
-    """
-    for _ in range(time_steps):
-        u = controller.apply(target)[0]
-        y = system.apply(u)
-        controller.update(u, y)
-    return y
-
-
-class TestController(unittest.TestCase):
-    def test_unconstrained_2D_LTI(self):
-        system = lti_1D_input_1D_output()
-        u_d, y_d = gather_offline_data(system)
-        T_ini = 20
-        target = [[10], [10], [10]]
-
-        controller = Controller(u_d, y_d, T_ini, len(target))
-        warm_up_controller(controller, system, u=[1])
-        y = control_system(controller, system, target, time_steps=2 * T_ini)
-
-        np.testing.assert_array_almost_equal(y, target[0])
-
-    def test_constrained_2D_LTI(self):
-        system = lti_1D_input_1D_output()
-        u_d, y_d = gather_offline_data(system)
-        T_ini = 20
-        target = [[10]]
-
-        controller = Controller(u_d, y_d, T_ini, len(target), input_constrain_fkt=lambda u: np.clip(u, 0, 25))
-        warm_up_controller(controller, system, u=[1])
-        y = control_system(controller, system, target, time_steps=2 * T_ini)
-
-        np.testing.assert_array_almost_equal(y, target[0])
 
 
 if __name__ == "__main__":

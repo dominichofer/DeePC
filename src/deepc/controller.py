@@ -142,9 +142,11 @@ class Controller:
         check_dimensions(target, "target", self.target_len, self.output_dims)
 
         # Flatten
+        u_ini = np.concatenate(self.u_ini).reshape(-1, 1)
+        y_ini = np.concatenate(self.y_ini).reshape(-1, 1)
         target = np.concatenate(target).reshape(-1, 1)
 
-        x = np.concatenate([self.u_ini, self.y_ini]).reshape(-1, 1)
+        x = np.concatenate([u_ini, y_ini]).reshape(-1, 1)
         w = self.M_u.T @ self.Q @ (target - self.M_x @ x)
         u_star = np.linalg.lstsq(self.G, w)[0]
 
