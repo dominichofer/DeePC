@@ -18,7 +18,7 @@ It depends on Eigen, Google Test, and Google Benchmark; which it installs automa
 To install the Python package `deepc`, run `pip install .`.<br>
 It installs the package and all its dependencies.<br>
 (Use `pip install -e .` to install it in [editable mode](https://pip.pypa.io/en/stable/topics/local-project-installs/#editable-installs).)<br>
-To run the provided tests, execute `python -m unittest discover tests/deepc_tests`.<br>
+To run the provided tests, execute `python -m unittest discover tests/deepc`.<br>
 (The GitHub actions run them on every commit.)
 ### C++
 To build the C++ library into a folder `build`, run

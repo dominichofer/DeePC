@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 from deepc import deePC
-from .helpers import create_1D_in_1D_out_LTI, create_2D_in_3D_out_LTI, gather_offline_data
+from helpers import create_1D_in_1D_out_LTI, create_2D_in_3D_out_LTI, gather_offline_data
 
 
 class Test_1D_in_1D_out_LTI(unittest.TestCase):
