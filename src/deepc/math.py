@@ -1,4 +1,4 @@
-import math
+import math.py
 from typing import Callable
 import numpy as np
 
@@ -47,7 +47,10 @@ def projected_gradient_method(
         target: target vector
         constrain: function that constrains the result
     """
-    step_size = 1 / np.linalg.norm(mat)
+    if hasattr(np.linalg, 'matrix_norm'):
+        step_size = 1 / np.linalg.matrix_norm(mat)
+    else:
+        step_size = 1 / np.linalg.norm(mat)
     x_old = constrain(x_ini)
     for _ in range(max_iterations):
         x_new = constrain(x_old - step_size * (mat @ x_old - target))
@@ -55,6 +58,7 @@ def projected_gradient_method(
             return x_new
         x_old = x_new
     return x_old
+
 
 
 def linear_chirp(f0: float, f1: float, samples: int, phi: float = 0) -> list[float]:
