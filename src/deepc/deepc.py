@@ -131,4 +131,88 @@ def deePC(
     return u_star.reshape(-1, input_dims)
 
 
+def suggested_dims(matrix: np.ndarray) -> int:
+    s = np.linalg.svd(matrix, compute_uv=False)
+    energy_retained = np.cumsum(s**2) / np.sum(s**2)
+    return np.searchsorted(energy_retained, 0.99) + 1
+
+def data_quality(
+    u_d: list | np.ndarray,
+    y_d: list | np.ndarray,
+    T_ini: int,
+    target_len: int,
+    Q: np.ndarray | int | float | None = None,
+    R: np.ndarray | int | float | None = None,
+):
+    u_d = as_column_vector(u_d)
+    y_d = as_column_vector(y_d)
+
+    offline_len = len(u_d)
+    input_dims = u_d.shape[1]
+    output_dims = y_d.shape[1]
+
+    check_dimensions(u_d, "u_d", offline_len, input_dims)
+    check_dimensions(y_d, "y_d", offline_len, output_dims)
+
+    Q_size = target_len * output_dims
+    if isinstance(Q, (int, float)):
+        Q = np.eye(Q_size) * Q
+    if Q is None:
+        Q = np.eye(Q_size)
+    check_dimensions(Q, "Q", Q_size, Q_size)
+
+    R_size = target_len * input_dims
+    if isinstance(R, (int, float)):
+        R = np.eye(R_size) * R
+    if R is None:
+        R = np.zeros((R_size, R_size))
+    check_dimensions(R, "R", R_size, R_size)
+
+    U = hankel_matrix(T_ini + target_len, u_d)
+    U_p = U[: T_ini * input_dims, :]  # past
+    U_f = U[T_ini * input_dims :, :]  # future
+    Y = hankel_matrix(T_ini + target_len, y_d)
+    Y_p = Y[: T_ini * output_dims, :]  # past
+    Y_f = Y[T_ini * output_dims :, :]  # future
+
+    A = np.block([[U_p], [Y_p], [U_f]])
+
+    M = Y_f @ np.linalg.pinv(A)
+
+    dim_sum = input_dims + output_dims
+    M_x = M[:, : T_ini * dim_sum]
+    M_u = M[:, T_ini * dim_sum :]
+
+    G = M_u.T @ Q @ M_u + R
+
+    print(f"Suggested dimensions for U: {suggested_dims(U)}")
+    print(f"Suggested dimensions for Y: {suggested_dims(Y)}")
+
+    print(f"Shape of U_p: {U_p.shape}")
+    print(f"Rank of U_p: {np.linalg.matrix_rank(U_p)}")
+    print(f"Condition number of U_p: {np.linalg.cond(U_p)}")
+
+    print(f"Shape of U_f: {U_f.shape}")
+    print(f"Rank of U_f: {np.linalg.matrix_rank(U_f)}")
+    print(f"Condition number of U_f: {np.linalg.cond(U_f)}")
+
+    print(f"Shape of Y_p: {Y_p.shape}")
+    print(f"Rank of Y_p: {np.linalg.matrix_rank(Y_p)}")
+    print(f"Condition number of Y_p: {np.linalg.cond(Y_p)}")
+
+    print(f"Shape of Y_f: {Y_f.shape}")
+    print(f"Rank of Y_f: {np.linalg.matrix_rank(Y_f)}")
+    print(f"Condition number of Y_f: {np.linalg.cond(Y_f)}")
+
+    print(f"Shape of A: {A.shape}")
+    print(f"Rank of A: {np.linalg.matrix_rank(A)}")
+    print(f"Condition number of A: {np.linalg.cond(A)}")
+
+    print(f"Shape of M: {M.shape}")
+    print(f"Rank of M: {np.linalg.matrix_rank(M)}")
+    print(f"Condition number of M: {np.linalg.cond(M)}")
+
+    print(f"Shape of G: {G.shape}")
+    print(f"Rank of G: {np.linalg.matrix_rank(G)}")
+    print(f"Condition number of G: {np.linalg.cond(G)}")
 
