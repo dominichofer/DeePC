@@ -1,6 +1,6 @@
 from typing import Callable
 import numpy as np
-from .math import hankel_matrix, projected_gradient_method
+from .math_deepc import hankel_matrix, projected_gradient_method
 
 
 def as_column_vector(v: list | np.ndarray) -> np.ndarray:

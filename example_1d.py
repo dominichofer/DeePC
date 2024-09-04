@@ -1,7 +1,7 @@
 import numpy as np
 
 from scipy.signal import chirp
-import math
+
 import matplotlib.pyplot as plt
 from deepc import Controller, RandomNoisyLTI, linear_chirp
 

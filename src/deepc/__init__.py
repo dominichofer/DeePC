@@ -1,4 +1,4 @@
-from .math import linear_chirp
+from .math_deepc import linear_chirp
 from .lti import DiscreteLTI, RandomNoiseDiscreteLTI
 from .deepc import deePC, data_quality
 from .controller import Controller
