@@ -3,12 +3,12 @@ import numpy as np
 from scipy.signal import chirp
 
 import matplotlib.pyplot as plt
-from deepc import Controller, RandomNoisyLTI, linear_chirp
+from deepc import Controller, RandomNoiseDiscreteLTI, linear_chirp
 
 
 
 # Define a system
-system = RandomNoisyLTI(
+system = RandomNoiseDiscreteLTI(
     A=[[1.9154297228892199, -0.9159698592594919], [1.0, 0.0]],
     B=[[0.0024407501942859677], [0.0]],
     C=[[1, 0]],
@@ -17,7 +17,7 @@ system = RandomNoisyLTI(
     noise_std=0.0
 )
 # Gather offline data
-N = 500
+N = 1000
 
 #frequency sweep input 
 u_d = linear_chirp(0, N / 2, N)
@@ -31,12 +31,11 @@ T_ini = 17 # seems like should be bigger than r_len
 r_len = 11
 
 # Define the controller
-constraint = lambda u: np.clip(u, 0, 50)
-controller = Controller(u_d, y_d, T_ini, r_len, control_constrain_fkt=constraint)#
+controller = Controller(u_d, y_d, T_ini, r_len, input_constrain_fkt=lambda u: np.clip(u, 0, 5))
 
 # Reset the system
 # to sepereate the offline data from the online data
-system.set_state([0, 0])  # This is intentionally not the same state as x_ini
+system.set_state([0.1, 0.1])  # This is intentionally not the same state as x_ini
 
 # Warm up the controller
 for i in range(T_ini):
@@ -52,7 +51,7 @@ assert controller.is_initialized()
 # Simulate the system
 u_online = []
 y_online = []
-r_online = [0.5] * 40 + [10] * 100 + [10] * 100 + [14]*150
+r_online = [0.5] * 10 + [10] * 100 + [10] * 100 + [14]*150
 for i in range(len(r_online) - r_len):
     r = r_online[i: i + r_len]
     u = controller.apply(r)[0]
