@@ -1,7 +1,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from deepc import Controller, RandomNoiseDiscreteLTI
+from deepc import Controller, RandomNoiseDiscreteLTI, data_quality
 
 from scipy.signal import max_len_seq
 
@@ -117,6 +117,7 @@ y_d = system.apply_multiple(u_d)
 u_p = np.array(u_d)
 y_p = np.array(y_d)
 
+
 print("Data size:", np.shape(u_d))
 
 # Plotting the control input
@@ -142,8 +143,10 @@ plt.legend()
 plt.tight_layout()
 
 # Define the controller parameters
-T_ini = 20
+T_ini = 15
 r_len = 5
+
+data_quality(u_d, y_d, T_ini, r_len)
 
 # Define the controller
 constraint = lambda u: np.clip(u, min_input, max_input)
@@ -204,6 +207,31 @@ ax2.legend()
 
 # Adjust layout to prevent overlap
 plt.tight_layout()
+
+
+
+y_online = np.array(y_online)
+r_online = np.array(r_online[:len(y_online)])  # Trim the targets to match y_online length
+
+# Calculate RMSE for each dimension
+rmse = np.sqrt(np.mean((y_online - r_online) ** 2, axis=0))
+
+# Calculate MAE for each dimension
+mae = np.mean(np.abs(y_online - r_online), axis=0)
+
+# Print out the results for each dimension
+for i in range(10):
+    print(f"Dimension {i+1}: RMSE = {rmse[i]:.4f}, MAE = {mae[i]:.4f}")
+
+# If you want a single aggregate score across all dimensions
+total_rmse = np.sqrt(np.mean((y_online - r_online) ** 2))
+total_mae = np.mean(np.abs(y_online - r_online))
+
+print(f"Overall RMSE: {total_rmse:.4f}")
+print(f"Overall MAE: {total_mae:.4f}")
+
+
+
 
 # Show the plot
 plt.show()
