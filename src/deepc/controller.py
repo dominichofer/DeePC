@@ -80,7 +80,7 @@ class Controller:
         Y_p = Y[: T_ini * self.output_dims, :]  # past
         Y_f = Y[T_ini * self.output_dims :, :]  # future
 
-        #self.suggest_dimensions(U_p, U_f, Y_p, Y_f)
+        self.suggest_dimensions(U_p, U_f, Y_p, Y_f)
 
         # Now solving
         # minimize: ||y - r||_Q^2 + ||u||_R^2
