@@ -151,7 +151,7 @@ class Controller:
 
         x = np.concatenate([u_ini, y_ini]).reshape(-1, 1)
         w = self.M_u.T @ self.Q @ (target - self.M_x @ x)
-        u_star = np.linalg.lstsq(self.G, w)[0]
+        u_star = np.linalg.lstsq(self.G, w, rcond=None)[0]
 
         if self.input_constrain_fkt is not None:
             u_star = projected_gradient_method(

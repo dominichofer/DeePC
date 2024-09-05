@@ -52,16 +52,16 @@ system = RandomNoiseDiscreteLTI(
        [0.02, 0.8, 0.1], 
        [0.01, 0.02, 0.7]],
     B=[[0.3, 0, 0], 
-       [0, 0.3, 0], 
-       [0, 0, 0.3]],
-    C=[[1, 0, 0], 
-       [0, 1, 0], 
-       [0, 0, 1]],
+       [0, 0.2, 0], 
+       [0, 0, 0.4]],
+    C=[[1.1, 0, 0], 
+       [0, 1.3, 0], 
+       [0, 0, 0.8]],
     D=[[0, 0, 0], 
        [0, 0, 0], 
        [0, 0, 0]],
     x_ini=[5.0, 5.0, 5.0],
-   noise_std=0.0
+   noise_std=0.05
 )
 
 print( "is it stable " ,system.is_stable())
@@ -75,9 +75,9 @@ N = 1
 #u_d = [[0,0,max_input]] * N + [[0,max_input,0]] * N + [[max_input,0,0]] * N
 # and applying it to the system
 
-#u_d = prbs_sequence;#overwriting above
+u_d = prbs_sequence
 iterator = 5
-u_d = [[x,y,z] for x in range(iterator) for y in range(iterator) for z in range(iterator) for _ in range(N)]
+#u_d = [[x,y,z] for x in range(iterator) for y in range(iterator) for z in range(iterator) for _ in range(N)]
 
 # Apply it to the system
 y_d = system.apply_multiple(u_d)
