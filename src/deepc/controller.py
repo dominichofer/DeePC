@@ -109,7 +109,7 @@ class Controller:
         # https://en.wikipedia.org/wiki/Ridge_regression#Generalized_Tikhonov_regularization
         # minimize: ||y - r||_Q^2 + ||u||_R^2
         # subject to: M_u * u = y - M_x * x
-        # This has an explicit solution u_star = (M_u^T * Q * M_u + R)^-1 * (M_u^T * Q * y).
+        # This has an explicit solution u_star = (M_u^T * Q * M_u + R)^-1 * (M_u^T * Q * y + R * u_0).
 
         # We precompute the matrix G = M_u^T * Q * M_u + R.
         self.G = self.M_u.T @ self.Q @ self.M_u + self.R
@@ -128,12 +128,15 @@ class Controller:
         self.u_ini.clear()
         self.y_ini.clear()
 
-    def apply(self, target: list | np.ndarray) -> list[float] | None:
+    def apply(
+        self, target: list | np.ndarray, u_0: list | np.ndarray | None = None
+    ) -> list[float] | None:
         """
         Returns the optimal control for a given reference trajectory
         or None if the controller is not initialized.
         Args:
             target: Target system outputs, optimal control tries to reach.
+            u_0: Control input offset, defaults to zero vector.
         """
         if not self.is_initialized():
             return None
@@ -141,13 +144,21 @@ class Controller:
         target = as_column_vector(target)
         check_dimensions(target, "target", self.target_len, self.output_dims)
 
+        if u_0 is None:
+            u_0 = np.zeros((self.target_len, self.input_dims))
+        else:
+            u_0 = as_column_vector(u_0)
+        check_dimensions(u_0, "u_0", self.target_len, self.input_dims)
+
         # Flatten
         u_ini = np.concatenate(self.u_ini).reshape(-1, 1)
         y_ini = np.concatenate(self.y_ini).reshape(-1, 1)
         target = np.concatenate(target).reshape(-1, 1)
+        u_0 = np.concatenate(u_0).reshape(-1, 1)
 
         x = np.concatenate([u_ini, y_ini]).reshape(-1, 1)
-        w = self.M_u.T @ self.Q @ (target - self.M_x @ x)
+        w = self.M_u.T @ self.Q @ (target - self.M_x @ x) + self.R @ u_0
+
         u_star = np.linalg.lstsq(self.G, w)[0]
 
         if self.input_constrain_fkt is not None:
