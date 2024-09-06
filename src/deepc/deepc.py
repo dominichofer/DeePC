@@ -90,6 +90,7 @@ def deePC(
     u_ini = np.concatenate(u_ini).reshape(-1, 1)
     y_ini = np.concatenate(y_ini).reshape(-1, 1)
     target = np.concatenate(target).reshape(-1, 1)
+    u_0 = np.concatenate(u_0).reshape(-1, 1)
 
     U = hankel_matrix(T_ini + target_len, u_d)
     U_p = U[: T_ini * input_dims, :]  # past

@@ -12,7 +12,6 @@ class Controller:
         y_d: list | np.ndarray,
         T_ini: int,
         target_len: int,
-        u_0: list | np.ndarray | None = None,
         Q: np.ndarray | int | float | None = None,
         R: np.ndarray | int | float | None = None,
         input_constrain_fkt: Callable | None = None,
@@ -28,7 +27,6 @@ class Controller:
             y_d: System outputs from an offline procedure.
             T_ini: Number of system in- and outputs to initialize the state.
             target_len: Length of the target system outputs, optimal control tries to match.
-            u_0: Control input offset, defaults to zero vector.
             Q: Output cost matrix. Defaults to identity matrix.
                If int or float, diagonal matrix with this value.
             R: Control cost matrix. Defaults to zero matrix.
@@ -50,12 +48,6 @@ class Controller:
         check_dimensions(u_d, "u_d", offline_len, self.input_dims)
         check_dimensions(y_d, "y_d", offline_len, self.output_dims)
 
-        if u_0 is None:
-            u_0 = np.zeros((target_len, self.input_dims))
-        else:
-            u_0 = as_column_vector(u_0)
-        check_dimensions(u_0, "u_0", target_len, self.input_dims)
-
         Q_size = target_len * self.output_dims
         if isinstance(Q, (int, float)):
             Q = np.eye(Q_size) * Q
@@ -74,7 +66,6 @@ class Controller:
         self.target_len = target_len
         self.u_ini: collections.deque[np.ndarray] = collections.deque(maxlen=T_ini)
         self.y_ini: collections.deque[np.ndarray] = collections.deque(maxlen=T_ini)
-        self.u_0 = u_0
         self.Q = Q
         self.R = R
         self.input_constrain_fkt = input_constrain_fkt
@@ -137,12 +128,15 @@ class Controller:
         self.u_ini.clear()
         self.y_ini.clear()
 
-    def apply(self, target: list | np.ndarray) -> list[float] | None:
+    def apply(
+        self, target: list | np.ndarray, u_0: list | np.ndarray | None = None
+    ) -> list[float] | None:
         """
         Returns the optimal control for a given reference trajectory
         or None if the controller is not initialized.
         Args:
             target: Target system outputs, optimal control tries to reach.
+            u_0: Control input offset, defaults to zero vector.
         """
         if not self.is_initialized():
             return None
@@ -150,13 +144,20 @@ class Controller:
         target = as_column_vector(target)
         check_dimensions(target, "target", self.target_len, self.output_dims)
 
+        if u_0 is None:
+            u_0 = np.zeros((self.target_len, self.input_dims))
+        else:
+            u_0 = as_column_vector(u_0)
+        check_dimensions(u_0, "u_0", self.target_len, self.input_dims)
+
         # Flatten
         u_ini = np.concatenate(self.u_ini).reshape(-1, 1)
         y_ini = np.concatenate(self.y_ini).reshape(-1, 1)
         target = np.concatenate(target).reshape(-1, 1)
+        u_0 = np.concatenate(u_0).reshape(-1, 1)
 
         x = np.concatenate([u_ini, y_ini]).reshape(-1, 1)
-        w = self.M_u.T @ self.Q @ (target - self.M_x @ x) + self.R @ self.u_0
+        w = self.M_u.T @ self.Q @ (target - self.M_x @ x) + self.R @ u_0
 
         u_star = np.linalg.lstsq(self.G, w)[0]
 
