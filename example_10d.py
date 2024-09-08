@@ -37,11 +37,8 @@ def generate_prbs_with_shift(length, num_channels=3, levels=[0, 10], shift=10, s
     
     return prbs_sequence
 
-
-
 max_input = 4.5
 min_input = -4.5
-
 
 # Usage example prbs:
 length = 1024
