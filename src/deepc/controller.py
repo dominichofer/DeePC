@@ -112,7 +112,7 @@ class Controller:
         # https://en.wikipedia.org/wiki/Ridge_regression#Generalized_Tikhonov_regularization
         # minimize: ||y - r||_Q^2 + ||u||_R^2
         # subject to: M_u * u = y - M_x * x
-        # This has an explicit solution u_star = (M_u^T * Q * M_u + R)^-1 * (M_u^T * Q * y).
+        # This has an explicit solution u_star = (M_u^T * Q * M_u + R)^-1 * (M_u^T * Q * y + R * u_0).
 
         # We precompute the matrix G = M_u^T * Q * M_u + R.
         self.G = self.M_u.T @ self.Q @ self.M_u + self.R
@@ -131,69 +131,37 @@ class Controller:
         self.u_ini.clear()
         self.y_ini.clear()
 
-    def apply(self, target: list | np.ndarray) -> list[float] | None:
+    def apply(
+        self, target: list | np.ndarray, u_0: list | np.ndarray | None = None
+    ) -> list[float] | None:
         """
         Returns the optimal control for a given reference trajectory
         or None if the controller is not initialized.
         Args:
             target: Target system outputs, optimal control tries to reach.
+            u_0: Control input offset, defaults to zero vector.
         """
         if not self.is_initialized():
             return None
 
         target = as_column_vector(target)
         check_dimensions(target, "target", self.target_len, self.output_dims)
+
+        if u_0 is None:
+            u_0 = np.zeros((self.target_len, self.input_dims))
+        else:
+            u_0 = as_column_vector(u_0)
+        check_dimensions(u_0, "u_0", self.target_len, self.input_dims)
 
         # Flatten
         u_ini = np.concatenate(self.u_ini).reshape(-1, 1)
         y_ini = np.concatenate(self.y_ini).reshape(-1, 1)
         target = np.concatenate(target).reshape(-1, 1)
+        u_0 = np.concatenate(u_0).reshape(-1, 1)
 
         x = np.concatenate([u_ini, y_ini]).reshape(-1, 1)
-        w = self.M_u.T @ self.Q @ (target - self.M_x @ x)
-        u_star = np.linalg.lstsq(self.G, w, rcond=None)[0]
+        w = self.M_u.T @ self.Q @ (target - self.M_x @ x) + self.R @ u_0
 
-        if self.input_constrain_fkt is not None:
-            u_star = projected_gradient_method(
-                self.G,
-                u_star,
-                w,
-                self.input_constrain_fkt,
-                self.max_pgm_iterations,
-                self.pgm_tolerance,
-            )
-
-        return u_star.reshape(-1, self.input_dims)
-
-    
-    #todo figure this out
-    def apply_ref_trajecotry(self, target: list | np.ndarray) -> list[float] | None:
-        """
-        Returns the optimal control for a given reference trajectory also using steady state input
-        or None if the controller is not initialized.
-        Args:
-            target: Target system outputs, optimal control tries to reach.
-        """
-        from scipy.linalg import solve  # or numpy.linalg
-        if not self.is_initialized():
-            return None
-
-        # get the u_ref
-        Mu_bar = np.zeros_like(self.M_u)
-        Mu_bar[:,:self.M_x.shape[1]] = self.M_x
-        u_bar = solve(Mu_bar+self.M_u, target-self.M_x@target[:self.T_ini])
-        if not np.allclose(self.M_x@np.block([[u_bar[:self.T_ini,:]],[target[:self.T_ini,:]]]) + self.M_u@u_bar,target):
-            print('u_bar problem')
-
-
-        target = as_column_vector(target)
-        check_dimensions(target, "target", self.target_len, self.output_dims)
-
-        # Flatten
-        target = np.concatenate(target).reshape(-1, 1)
-
-        x = np.concatenate([self.u_ini, self.y_ini]).reshape(-1, 1)
-        w = self.M_u.T @ self.Q @ (target - self.M_x @ x) + self.R*u_bar
         u_star = np.linalg.lstsq(self.G, w)[0]
 
         if self.input_constrain_fkt is not None:
