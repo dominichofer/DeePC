@@ -1,41 +1,11 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from deepc import Controller, RandomNoiseDiscreteLTI
+from deepc import Controller, RandomNoiseDiscreteLTI, generate_prbs_with_shift
 
-from scipy.signal import max_len_seq
 
-def generate_prbs_with_shift(length, num_channels=3, levels=[0, 10], shift=10, samples_n=6):
-    """
-    Generate a PRBS input sequence with a phase shift for each channel.
-    
-    Args:
-    - length (int): Desired length of the PRBS sequence.
-    - num_channels (int): Number of input channels.
-    - levels (list): Levels that the PRBS can take. Default is [0, 10].
-    - shift (int): Number of steps to shift each subsequent channel.
-    - samples_n (int): The number of bits in the PRBS sequence.
-    
-    Returns:
-    - prbs_sequence (list): Generated PRBS sequence with shifts.
-    """
-    # Generate the base PRBS sequence using max_len_seq
-    seq = max_len_seq(samples_n)[0]
-    N = len(seq)
-    
-    # Repeat the sequence if necessary to reach the desired length
-    base_sequence = np.tile(seq, (length + (num_channels - 1) * shift) // N + 1)[:length + (num_channels - 1) * shift]
-    
-    # Adjust the levels
-    base_sequence = base_sequence * (levels[1] - levels[0]) + levels[0]
-    
-    # Generate PRBS sequence with phase shifts
-    prbs_sequence = []
-    for i in range(length):
-        step = [base_sequence[i + (j * shift)] for j in range(num_channels)]
-        prbs_sequence.append(step)
-    
-    return prbs_sequence
+
+
 
 # Usage example:
 length = 64
@@ -67,7 +37,7 @@ system = RandomNoiseDiscreteLTI(
 print( "is it stable " ,system.is_stable())
 
 max_input = 5
-min_input = -2
+min_input = -2.0
 
 # Gather offline data
 N = 1
@@ -113,10 +83,10 @@ plt.tight_layout()
 
 # Define how many steps the controller should look back
 # to grasp the current state of the system
-T_ini = 1
+T_ini = 7
 
 # Define how many steps the controller should look forward
-r_len = 1
+r_len = 3
 
 # Define the controller
 constraint = lambda u: np.clip(u, min_input, max_input)
@@ -139,7 +109,7 @@ u_ss = [0.1, 0.1, 0.1]
 # Simulate the system
 u_online = []
 y_online = []
-r_online = [[0, 5, 0]] * 200 + [[0, 0, 5]] * 200 + [[5, 4, 3]] * 200 + [[0, 7, 2]] * 200
+r_online = [[0, 6, 0]] * 200 + [[0, 0, -1]] * 200 + [[7, 4, 1]] * 200 + [[0, 7, 2]] * 200
 for i in range(len(r_online) - r_len):
     r = r_online[i: i + r_len]
     #print("u ss : ",[r, u_ss])
@@ -178,6 +148,26 @@ ax2.legend()
 
 # Adjust layout to prevent overlap
 plt.tight_layout()
+
+r_online = np.array(r_online[:len(y_online)])  # Trim the targets to match y_online length
+
+# Calculate RMSE for each dimension
+rmse = np.sqrt(np.mean((y_online - r_online) ** 2, axis=0))
+
+# Calculate MAE for each dimension
+mae = np.mean(np.abs(y_online - r_online), axis=0)
+
+# Print out the results for each dimension
+for i in range(3):
+    print(f"Dimension {i+1}: RMSE = {rmse[i]:.4f}, MAE = {mae[i]:.4f}")
+
+# If you want a single aggregate score across all dimensions
+total_rmse = np.sqrt(np.mean((y_online - r_online) ** 2))
+total_mae = np.mean(np.abs(y_online - r_online))
+
+print(f"Overall RMSE: {total_rmse:.4f}")
+print(f"Overall MAE: {total_mae:.4f}")
+
 
 # Show the plot
 plt.show()

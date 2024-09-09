@@ -160,7 +160,7 @@ while not controller.is_initialized():
 
 # Exp discarded filter
 l = 0.9
-u_ss = [0.1] * 10
+u_ss = [0.0] *10 
 
 # Simulate the system
 u_online = []
@@ -178,7 +178,7 @@ r_online = [[0] * 10] * 200 + \
 
 for i in range(len(r_online) - r_len):
     r = r_online[i: i + r_len]
-    u = controller.apply(r)[0]
+    u = controller.apply(r)[0] # , [u_ss]*5
     y = system.apply(u)
     controller.update(u, y)
     u_online.append(u)
@@ -196,7 +196,7 @@ ax1.set_title('Inputs')
 ax1.legend()
 
 # Plot outputs and targets
-for i in range(10):  # Plot only first 3 outputs for readability
+for i in range(10): 
     ax2.plot([y[i] for y in y_online], label=f"output {i+1}")
     ax2.plot([r[i] for r in r_online[:len(y_online)]], label=f"target {i+1}", linestyle="--")
 ax2.set_title('Outputs and Targets')

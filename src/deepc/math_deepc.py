@@ -1,6 +1,8 @@
-import math
+from math import pi, sin
 from typing import Callable
 import numpy as np
+
+from scipy.signal import max_len_seq
 
 
 def left_pseudoinverse(mat: np.ndarray) -> np.ndarray:
@@ -75,9 +77,42 @@ def linear_chirp(f0: float, f1: float, samples: int, phi: float = 0) -> list[flo
         phi: Phase offset in radians.
     """
     return [
-        math.sin(
+        sin(
             phi
-            + 2 * math.pi * (f0 * (i / (samples - 1)) + 0.5 * (f1 - f0) * (i / (samples - 1)) ** 2)
+            + 2 * pi * (f0 * (i / (samples - 1)) + 0.5 * (f1 - f0) * (i / (samples - 1)) ** 2)
         )
         for i in range(samples)
     ]
+
+
+def generate_prbs_with_shift(length, num_channels=1, levels=[0, 10], shift=10, samples_n=6):
+    """
+    Generate a PRBS input sequence with a phase shift for each channel.
+    
+    Args:
+    - length (int): Desired length of the PRBS sequence.
+    - num_channels (int): Number of input channels.
+    - levels (list): Levels that the PRBS can take. Default is [0, 10].
+    - shift (int): Number of steps to shift each subsequent channel.
+    - samples_n (int): The number of bits in the PRBS sequence.
+    
+    Returns:
+    - prbs_sequence (list): Generated PRBS sequence with shifts.
+    """
+    # Generate the base PRBS sequence using max_len_seq
+    seq = max_len_seq(samples_n)[0]
+    N = len(seq)
+    
+    # Repeat the sequence if necessary to reach the desired length
+    base_sequence = np.tile(seq, (length + (num_channels - 1) * shift) // N + 1)[:length + (num_channels - 1) * shift]
+    
+    # Adjust the levels
+    base_sequence = base_sequence * (levels[1] - levels[0]) + levels[0]
+    
+    # Generate PRBS sequence with phase shifts
+    prbs_sequence = []
+    for i in range(length):
+        step = [base_sequence[i + (j * shift)] for j in range(num_channels)]
+        prbs_sequence.append(step)
+    
+    return prbs_sequence
