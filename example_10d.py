@@ -1,53 +1,36 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from deepc import Controller, RandomNoiseDiscreteLTI, data_quality
+from deepc import Controller, RandomNoiseDiscreteLTI, data_quality, generate_chirp_with_shift, generate_prbs_with_shift
 
 from scipy.signal import max_len_seq
 
-def generate_prbs_with_shift(length, num_channels=3, levels=[0, 10], shift=10, samples_n=6):
-    """
-    Generate a PRBS input sequence with a phase shift for each channel.
-    
-    Args:
-    - length (int): Desired length of the PRBS sequence.
-    - num_channels (int): Number of input channels.
-    - levels (list): Levels that the PRBS can take. Default is [0, 10].
-    - shift (int): Number of steps to shift each subsequent channel.
-    - samples_n (int): The number of bits in the PRBS sequence.
-    
-    Returns:
-    - prbs_sequence (list): Generated PRBS sequence with shifts.
-    """
-    # Generate the base PRBS sequence using max_len_seq
-    seq = max_len_seq(samples_n)[0]
-    N = len(seq)
-    
-    # Repeat the sequence if necessary to reach the desired length
-    base_sequence = np.tile(seq, (length + (num_channels - 1) * shift) // N + 1)[:length + (num_channels - 1) * shift]
-    
-    # Adjust the levels
-    base_sequence = base_sequence * (levels[1] - levels[0]) + levels[0]
-    
-    # Generate PRBS sequence with phase shifts
-    prbs_sequence = []
-    for i in range(length):
-        step = [base_sequence[i + (j * shift)] for j in range(num_channels)]
-        prbs_sequence.append(step)
-    
-    return prbs_sequence
 
 max_input = 4.5
 min_input = -4.5
 
 # Usage example prbs:
-length = 1024
+length = 1024#1024
 num_channels = 10
 levels = [min_input,max_input]
 shift = 40 #VERY IMPORTANT for data quality  HOW TO QUANTIFY THIS IN DATA QUALITY?
 samples_n = 9
 
 prbs_sequence = generate_prbs_with_shift(length, num_channels, levels, shift, samples_n)
+
+
+# chirp -------------------------------------------
+length = 1024
+num_channels = 10
+f0 = 0.1  # Start frequency in Hz
+f1 = 1000.0  # End frequency in Hz
+
+shift = 40
+samples_n = 1024
+phi = 0.1  # Initial phase
+
+chirp_sequence = generate_chirp_with_shift(length, num_channels, f0, f1, shift, samples_n, phi, levels)
+
 
 
 # Gather offline data
@@ -101,14 +84,14 @@ system = RandomNoiseDiscreteLTI(
        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]],
     
     x_ini=[5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0],
-    noise_std=0.0
+    noise_std=0.05
 )
 
 # Check system stability
 print("Is it stable?", system.is_stable())
 
 # Apply the input sequence to the system
-u_d = prbs_sequence
+u_d = chirp_sequence #prbs_sequence
 y_d = system.apply_multiple(u_d)
 
 u_p = np.array(u_d)
@@ -119,7 +102,7 @@ print("Data size:", np.shape(u_d))
 
 
 # Define the controller parameters
-T_ini = 15
+T_ini = 5
 r_len = 5
 
 data_quality(u_d, y_d, T_ini, r_len)
