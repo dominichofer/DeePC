@@ -101,7 +101,7 @@ system = RandomNoiseDiscreteLTI(
        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]],
     
     x_ini=[5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0],
-    noise_std=0.05
+    noise_std=0.0
 )
 
 # Check system stability
@@ -116,6 +116,15 @@ y_p = np.array(y_d)
 
 
 print("Data size:", np.shape(u_d))
+
+
+# Define the controller parameters
+T_ini = 15
+r_len = 5
+
+data_quality(u_d, y_d, T_ini, r_len)
+
+
 
 # Plotting the control input
 plt.figure(figsize=(12, 8))
@@ -139,11 +148,7 @@ plt.legend()
 
 plt.tight_layout()
 
-# Define the controller parameters
-T_ini = 15
-r_len = 5
 
-data_quality(u_d, y_d, T_ini, r_len)
 
 # Define the controller
 constraint = lambda u: np.clip(u, min_input, max_input)

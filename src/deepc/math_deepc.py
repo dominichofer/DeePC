@@ -67,22 +67,57 @@ def projected_gradient_method(
 
 
 
-def linear_chirp(f0: float, f1: float, samples: int, phi: float = 0) -> list[float]:
+def generate_chirp_with_shift(length: int, num_channels: int = 1, f0: float = 0.5, f1: float = 2.0, shift: int = 6, samples_n: int = 26, phi: float = 0, levels=[-1, 1]):
     """
-    Generate a linear chirp signal.
+    Generate a linear chirp signal with phase shifts for multiple channels, scaled to specified levels.
+
     Args:
-        f0: Start frequency in Hz.
-        f1: End frequency in Hz.
-        samples: Number of samples.
-        phi: Phase offset in radians.
+    - length (int): Desired length of the chirp sequence.
+    - num_channels (int): Number of input channels.
+    - f0 (float): Start frequency in Hz. Default is 0.5 Hz.
+    - f1 (float): End frequency in Hz. Default is 2.0 Hz.
+    - shift (int): Number of steps to shift each subsequent channel.
+    - samples_n (int): Number of samples in the chirp sequence.
+    - phi (float): Phase offset in radians. Default is 0.
+    - levels (list): [min_input, max_input] to scale the output. Default is [-1, 1].
+    
+    Returns:
+    - chirp_sequence (list): Generated chirp sequence with shifts and scaling to levels.
     """
-    return [
-        sin(
-            phi
-            + 2 * pi * (f0 * (i / (samples - 1)) + 0.5 * (f1 - f0) * (i / (samples - 1)) ** 2)
-        )
-        for i in range(samples)
-    ]
+    # Generate the base chirp signal for the first channel
+    def linear_chirp_single_channel(f0, f1, samples, phi):
+        return [
+            sin(
+                phi
+                + 2 * pi * (f0 * (i / (samples - 1)) + 0.5 * (f1 - f0) * (i / (samples - 1)) ** 2)
+            )
+            for i in range(samples)
+        ]
+    
+    # Generate the base chirp sequence
+    base_sequence = linear_chirp_single_channel(f0, f1, samples_n, phi)
+
+    # Normalize the chirp sequence to the range [-1, 1]
+    min_chirp = min(base_sequence)
+    max_chirp = max(base_sequence)
+    normalized_sequence = [(x - min_chirp) / (max_chirp - min_chirp) * 2 - 1 for x in base_sequence]
+
+    # Scale the normalized sequence to the desired levels
+    min_input, max_input = levels
+    scaled_sequence = [(x + 1) / 2 * (max_input - min_input) + min_input for x in normalized_sequence]
+
+    # Ensure the sequence is long enough to accommodate shifting
+    N = len(scaled_sequence)
+    extended_sequence = scaled_sequence * (int((length + (num_channels - 1) * shift) // N) + 1)
+    
+    # Generate chirp sequence with shifts
+    chirp_sequence = []
+    for i in range(length):
+        step = [extended_sequence[i + (j * shift)] for j in range(num_channels)]
+        chirp_sequence.append(step)
+    
+    return chirp_sequence
+
 
 
 def generate_prbs_with_shift(length, num_channels=1, levels=[0, 10], shift=10, samples_n=6):

@@ -1,20 +1,11 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from deepc import Controller, RandomNoiseDiscreteLTI, generate_prbs_with_shift
+from deepc import Controller, RandomNoiseDiscreteLTI, generate_prbs_with_shift, data_quality, generate_chirp_with_shift
 
+max_input = 5
+min_input = -2.0
 
-
-
-
-# Usage example:
-length = 64
-num_channels = 3
-levels = [0, 10]
-shift = 10
-samples_n = 6
-
-prbs_sequence = generate_prbs_with_shift(length, num_channels, levels, shift, samples_n)
 
 # Define a system
 system = RandomNoiseDiscreteLTI(
@@ -36,18 +27,55 @@ system = RandomNoiseDiscreteLTI(
 
 print( "is it stable " ,system.is_stable())
 
-max_input = 5
-min_input = -2.0
 
+# pribs ..................................................................................
+# Usage example: seems to be the minimum "perfect" controller
+length = 26
+num_channels = 3
+levels = [min_input, max_input]
+shift = 6 
+samples_n = 5
+
+# Usage example: seems to be with noise good controller
+length = 90
+num_channels = 3
+levels = [min_input, max_input]
+shift = 7
+samples_n = 7
+
+prbs_sequence = generate_prbs_with_shift(length, num_channels, levels, shift, samples_n)
+
+
+
+# basic -----------------------------------------
+# this approach gives much more intuitive singluar values, however, it takes much more data to get a good controller (which is still worse),
 # Gather offline data
-N = 1
+N = 10
 # by defining a input sequence
-#u_d = [[0,0,max_input]] * N + [[0,max_input,0]] * N + [[max_input,0,0]] * N
-# and applying it to the system
+u_d = [[0,0,max_input]] * N + [[0,max_input,0]] * N + [[max_input,0,0]] * N
+# or this one
+iterator = 7
+u_d = [[x,y,z] for x in range(iterator) for y in range(iterator) for z in range(iterator) for _ in range(N)]
 
-u_d = prbs_sequence
-iterator = 5
-#u_d = [[x,y,z] for x in range(iterator) for y in range(iterator) for z in range(iterator) for _ in range(N)]
+
+
+# chirp -------------------------------------------
+length = 100
+num_channels = 3
+f0 = 1  # Start frequency in Hz
+f1 = 100.0  # End frequency in Hz
+
+shift = 25
+samples_n = 100
+phi = 0.1  # Initial phase
+
+chirp_sequence = generate_chirp_with_shift(length, num_channels, f0, f1, shift, samples_n, phi, levels)
+
+
+
+
+
+u_d = chirp_sequence #  prbs_sequence#   
 
 # Apply it to the system
 y_d = system.apply_multiple(u_d)
@@ -56,6 +84,16 @@ u_p = np.array(u_d)
 y_p = np.array(y_d)
 
 print("data size ", np.shape(u_d))
+
+# Define how many steps the controller should look back
+# to grasp the current state of the system
+T_ini = 3
+
+# Define how many steps the controller should look forward
+r_len = 3
+
+data_quality(u_d, y_d, T_ini, r_len, 1 , 0.001)
+
 
 plt.figure(figsize=(12, 8))
 
@@ -81,16 +119,10 @@ plt.legend()
 plt.tight_layout()
 #plt.show()
 
-# Define how many steps the controller should look back
-# to grasp the current state of the system
-T_ini = 7
-
-# Define how many steps the controller should look forward
-r_len = 3
 
 # Define the controller
 constraint = lambda u: np.clip(u, min_input, max_input)
-controller = Controller(u_d, y_d, T_ini, r_len, 1 , 0.001, input_constrain_fkt=constraint )
+controller = Controller(u_d, y_d, T_ini, r_len, 1 , 0.01, input_constrain_fkt=constraint )
 
 # Reset the system
 # to sepereate the offline data from the online data

@@ -1,5 +1,6 @@
 from typing import Callable
 import numpy as np
+import matplotlib.pyplot as plt
 from .math_deepc import hankel_matrix, projected_gradient_method
 
 
@@ -140,10 +141,38 @@ def deePC(
     return u_star.reshape(-1, input_dims)
 
 
-def suggested_dims(matrix: np.ndarray) -> int:
+
+def dominant_dim_and_find_max_drop(matrix: np.ndarray, name):
+
+    # this should show the main eigenvalues and have one large drop after which it should be cut off... should... 
+
+    # Perform Singular Value Decomposition (SVD)
     s = np.linalg.svd(matrix, compute_uv=False)
+
+    # Calculate energy retained
     energy_retained = np.cumsum(s**2) / np.sum(s**2)
-    return np.searchsorted(energy_retained, 0.99) + 1
+    
+    # Calculate the difference between consecutive singular values
+    diff = np.diff(s)
+    
+    # Find the largest drop in singular values
+    largest_drop = np.max(np.abs(diff))
+    print(f"Largest drop between consecutive singular values: {largest_drop:.4f}")
+
+    # Plot the singular values
+    plt.figure(figsize=(10, 6))
+    plt.plot(s, marker='o', label="Singular Values")
+    plt.title('Singular Values Series:' + name)
+    plt.xlabel('Index')
+    plt.ylabel('Singular Value / largest drop = '+ str(largest_drop))
+    plt.legend()
+    plt.grid(True)
+
+
+
+    # Return the number of dimensions needed to retain 99% of the energy
+    return np.searchsorted(energy_retained, 0.90) + 1, largest_drop
+
 
 def data_quality(
     u_d: list | np.ndarray,
@@ -194,8 +223,9 @@ def data_quality(
 
     G = M_u.T @ Q @ M_u + R
 
-    print(f"Suggested dimensions for U: {suggested_dims(U)}")
-    print(f"Suggested dimensions for Y: {suggested_dims(Y)}")
+
+    print(f"Dominant Dimensions and max drop for U: {dominant_dim_and_find_max_drop(U,"U")}")
+    print(f"Dominant Dimensions and max drop for Y: {dominant_dim_and_find_max_drop(Y,"Y")}")
 
     print(f"Shape of U_p: {U_p.shape}")
     print(f"Rank of U_p: {np.linalg.matrix_rank(U_p)}")
