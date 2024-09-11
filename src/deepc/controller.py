@@ -177,7 +177,7 @@ class Controller:
         return u_star.reshape(-1, self.input_dims)
     
 
-    def apply_trajectory_tracking_verion(
+    def apply_trajectory_tracking_version(
         self, target: list | None = None
     ) -> list[float] | None:
         from scipy.linalg import solve
@@ -194,19 +194,29 @@ class Controller:
         check_dimensions(target, "target", self.target_len, self.output_dims)
 
         # get the u_ref
-        M00 = self.M_x[:,:self.T_ini]
-        M01 = self.M_x[:,self.T_ini:]
+        dim_sum = self.input_dims + self.output_dims
+        M00 = self.M_x[:,:self.T_ini*self.input_dims]
+        M01 = self.M_x[:,self.T_ini*self.input_dims:]
         M00_bar = np.zeros_like(self.M_u)
+
+        target = np.concatenate(target).reshape(-1, 1)
+    
+
+        print(f"Shape of M01: {M01.shape}")
+        print(f"Shape of M00: {M00.shape}")
+        print(f"Shape of target[:self.T_ini*self.input_dims]: {target[:self.T_ini*self.input_dims].shape}")
+
         M00_bar[:,:M00.shape[1]] = M00
-        u_bar = solve(M00_bar+self.M_u, target-M01@target[:self.T_ini])
-        if not np.allclose(self.M0@np.block([[u_bar[:self.T_ini,:]],[target[:self.T_ini,:]]]) + self.Mu@self.u_bar,target):
-            print('u_bar problem')
+
+        u_bar = solve(M00_bar+self.M_u, target-M01@target[:self.T_ini*self.input_dims])
+        #if not np.allclose(self.M_x@np.block([[u_bar[:self.T_ini,:]],[target[:self.T_ini,:]]]) + self.Mu@self.u_bar,target):
+            #print('u_bar problem')
 
 
         # Flatten
         u_ini = np.concatenate(self.u_ini).reshape(-1, 1)
         y_ini = np.concatenate(self.y_ini).reshape(-1, 1)
-        target = np.concatenate(target).reshape(-1, 1)
+        
         u_0 = np.concatenate(u_bar).reshape(-1, 1)
 
         x = np.concatenate([u_ini, y_ini]).reshape(-1, 1)

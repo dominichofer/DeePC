@@ -39,6 +39,7 @@ chirp_sequence = generate_chirp_with_shift(length, num_channels, f0, f1, shift, 
 # where each mass is coupled to its neighbors. 
 # The system includes damping, coupling between masses, and control inputs, 
 
+
 system = RandomNoiseDiscreteLTI(
     A=[[0.9, 0.02, 0.05, 0, 0, 0, 0, 0, 0, 0],
        [0.01, 0.85, 0.02, 0.01, 0, 0, 0, 0, 0, 0],
