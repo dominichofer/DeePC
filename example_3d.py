@@ -22,7 +22,7 @@ system = RandomNoiseDiscreteLTI(
        [0, 0, 0], 
        [0, 0, 0]],
     x_ini=[5.0, 5.0, 5.0],
-   noise_std=0.05
+   noise_std=0.0
 )
 
 print( "is it stable " ,system.is_stable())
@@ -75,7 +75,7 @@ chirp_sequence = generate_chirp_with_shift(length, num_channels, f0, f1, shift, 
 
 
 
-u_d = chirp_sequence #  prbs_sequence#   
+u_d = prbs_sequence#    chirp_sequence #  
 
 # Apply it to the system
 y_d = system.apply_multiple(u_d)
@@ -145,6 +145,8 @@ r_online = [[0, 6, 0]] * 200 + [[0, 0, -1]] * 200 + [[7, 4, 1]] * 200 + [[0, 7, 
 for i in range(len(r_online) - r_len):
     r = r_online[i: i + r_len]
     #print("u ss : ",[r, u_ss])
+    #
+    #u = controller.apply(r)[0]
     u = controller.apply_trajectory_tracking_version(r)[0]#u_ss
     y = system.apply(u)#
     controller.update(u, y)
@@ -152,7 +154,7 @@ for i in range(len(r_online) - r_len):
     y_online.append(y)
     r_online.append(r)
 
-    u_ss = [(u[i] * (1 - l)) + (u_ss[i] * l) for i in range(len(u))]
+    #u_ss = [(u[i] * (1 - l)) + (u_ss[i] * l) for i in range(len(u))]
     #u_ss = np.zeros_like(u_ss)
     #print("u ss : ", u_ss)
 

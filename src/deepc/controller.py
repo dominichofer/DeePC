@@ -160,7 +160,7 @@ class Controller:
         u_0 = np.concatenate(u_0).reshape(-1, 1)
 
         x = np.concatenate([u_ini, y_ini]).reshape(-1, 1)
-        w = self.M_u.T @ self.Q @ (target - self.M_x @ x) + self.R @ u_0
+        w = self.M_u.T @ self.Q @ ((target - self.M_x @ x) + self.R @ u_0)
 
         u_star = np.linalg.lstsq(self.G, w)[0]
 
@@ -202,9 +202,9 @@ class Controller:
         target = np.concatenate(target).reshape(-1, 1)
     
 
-        print(f"Shape of M01: {M01.shape}")
-        print(f"Shape of M00: {M00.shape}")
-        print(f"Shape of target[:self.T_ini*self.input_dims]: {target[:self.T_ini*self.input_dims].shape}")
+        #print(f"Shape of M01: {M01.shape}")
+        #print(f"Shape of M00: {M00.shape}")
+        #print(f"Shape of target[:self.T_ini*self.input_dims]: {target[:self.T_ini*self.input_dims].shape}")
 
         M00_bar[:,:M00.shape[1]] = M00
 
@@ -218,9 +218,10 @@ class Controller:
         y_ini = np.concatenate(self.y_ini).reshape(-1, 1)
         
         u_0 = np.concatenate(u_bar).reshape(-1, 1)
+        print(u_0)
 
         x = np.concatenate([u_ini, y_ini]).reshape(-1, 1)
-        w = self.M_u.T @ self.Q @ (target - self.M_x @ x) + self.R @ u_0
+        w = self.M_u.T @ self.Q @ ((target - self.M_x @ x) + self.R @ u_0)
 
         u_star = np.linalg.lstsq(self.G, w)[0]
 

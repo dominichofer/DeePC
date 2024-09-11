@@ -168,7 +168,8 @@ r_online = [[0] * 10] * 200 + \
 
 for i in range(len(r_online) - r_len):
     r = r_online[i: i + r_len]
-    u = controller.apply(r)[0] # , [u_ss]*5
+    u = controller.apply_trajectory_tracking_version(r)[0]
+    #u = controller.apply(r)[0] # , [u_ss]*5
     y = system.apply(u)
     controller.update(u, y)
     u_online.append(u)
