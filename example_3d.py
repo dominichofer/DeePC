@@ -145,7 +145,7 @@ r_online = [[0, 6, 0]] * 200 + [[0, 0, -1]] * 200 + [[7, 4, 1]] * 200 + [[0, 7, 
 for i in range(len(r_online) - r_len):
     r = r_online[i: i + r_len]
     #print("u ss : ",[r, u_ss])
-    u = controller.apply(r)[0]#u_ss
+    u = controller.apply_trajectory_tracking_verion(r)[0]#u_ss
     y = system.apply(u)#
     controller.update(u, y)
     u_online.append(u)
