@@ -6,8 +6,8 @@ from deepc import Controller, RandomNoiseDiscreteLTI, data_quality, generate_chi
 from scipy.signal import max_len_seq
 
 
-max_input = 4.5
-min_input = -4.5
+max_input = 4.0
+min_input = -4.0
 
 # Usage example prbs:
 length = 1024#1024
@@ -168,8 +168,8 @@ r_online = [[0] * 10] * 200 + \
 
 for i in range(len(r_online) - r_len):
     r = r_online[i: i + r_len]
-    u = controller.apply_trajectory_tracking_version(r)[0]
-    #u = controller.apply(r)[0] # , [u_ss]*5
+    #u = controller.apply_trajectory_tracking_version(r)[0]
+    u = controller.apply(r)[0] # , [u_ss]*5
     y = system.apply(u)
     controller.update(u, y)
     u_online.append(u)

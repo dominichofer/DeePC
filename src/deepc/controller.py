@@ -206,6 +206,7 @@ class Controller:
         #print(f"Shape of M00: {M00.shape}")
         #print(f"Shape of target[:self.T_ini*self.input_dims]: {target[:self.T_ini*self.input_dims].shape}")
 
+        # problem here if r is smaller than T_ini
         M00_bar[:,:M00.shape[1]] = M00
 
         u_bar = solve(M00_bar+self.M_u, target-M01@target[:self.T_ini*self.input_dims])
