@@ -196,32 +196,32 @@ class Controller:
         target = as_column_vector(target)
         check_dimensions(target, "target", self.target_len, self.output_dims)
 
-        ''' get the u_ref by solving target = M_x ⋅x + M_u⋅u bar 
+        ''' get the u_ref by solving target = M_x ⋅x + M_u⋅u_bar 
         where:
 
         - target is the desired future output trajectory.
         - x is the vector of initial conditions (past inputs and outputs).
-        - u_bar is the future input sequence we aim to compute.
+        - u_bar is the steady state input sequence we aim to compute.
         '''
 
         # Compute effective T_ini based on target length (for r smaller T_ini error)
         # effective_T_ini = min(self.T_ini, len(target) // self.output_dims) todo, still not working
 
-        M_x_initial_u = self.M_x[:,:self.T_ini*self.input_dims]
-        M_x_initial_y = self.M_x[:,self.T_ini*self.input_dims:]
-        M_bar = np.zeros_like(self.M_u)
+        M_x_uini = self.M_x[:,:self.T_ini*self.input_dims]
+        M_x_yini = self.M_x[:,self.T_ini*self.input_dims:]
+        M_x_uini_extended = np.zeros_like(self.M_u)
 
         target = np.concatenate(target).reshape(-1, 1)
 
         # problem here if r is smaller than T_ini (see solution above)
-        M_bar[:,:M_x_initial_u.shape[1]] = M_x_initial_u
+        M_x_uini_extended[:,:M_x_uini.shape[1]] = M_x_uini
 
-        u_bar = solve(M_bar+self.M_u, target-M_x_initial_y@target[:self.T_ini*self.input_dims])
+        u_bar = solve(M_x_uini_extended + self.M_u, target - M_x_yini@target[:self.T_ini*self.input_dims])
         '''
         LHS: Represents the total influence of the inputs (both initial and future) on the future outputs.
         RHS: target_subset = target[:self.T_ini * self.input_dims]: This is the subset of the target trajectory corresponding to the initial outputs.
-             M_x_initial_y @ target_subset: Calculates the influence of the initial outputs on the future outputs.
-             target - M_x_initial_y @ target_subset: Represents the desired future outputs after subtracting the effect of the initial outputs.
+             M_x_yini @ target_subset: Calculates the influence of the initial outputs on the future outputs.
+             target - M_x_yini @ target_subset: Represents the desired future outputs after subtracting the effect of the initial outputs.
         '''
 
         # Flatten
@@ -231,7 +231,7 @@ class Controller:
         x = np.concatenate([u_ini, y_ini]).reshape(-1, 1)
 
         # verification of u_bar
-        should_be_target = self.M_x @ x + self.M_u @ u_bar
+        should_be_target = self.M_x @ x + self.M_u @ u_0
 
         if not np.allclose(should_be_target, target):
             print('u_bar computation problem')
