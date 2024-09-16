@@ -177,6 +177,9 @@ class Controller:
         return u_star.reshape(-1, self.input_dims)
     
 
+
+
+
     def apply_trajectory_tracking_version(
         self, target: list | None = None
     ) -> list[float] | None:
@@ -193,38 +196,54 @@ class Controller:
         target = as_column_vector(target)
         check_dimensions(target, "target", self.target_len, self.output_dims)
 
-        # get the u_ref
-        dim_sum = self.input_dims + self.output_dims
-        M00 = self.M_x[:,:self.T_ini*self.input_dims]
-        M01 = self.M_x[:,self.T_ini*self.input_dims:]
-        M00_bar = np.zeros_like(self.M_u)
+        ''' get the u_ref by solving target = M_x ⋅x + M_u⋅u bar 
+        where:
+
+        - target is the desired future output trajectory.
+        - x is the vector of initial conditions (past inputs and outputs).
+        - u_bar is the future input sequence we aim to compute.
+        '''
+
+        # Compute effective T_ini based on target length (for r smaller T_ini error)
+        # effective_T_ini = min(self.T_ini, len(target) // self.output_dims) todo, still not working
+
+        M_x_initial_u = self.M_x[:,:self.T_ini*self.input_dims]
+        M_x_initial_y = self.M_x[:,self.T_ini*self.input_dims:]
+        M_bar = np.zeros_like(self.M_u)
 
         target = np.concatenate(target).reshape(-1, 1)
-    
 
-        #print(f"Shape of M01: {M01.shape}")
-        #print(f"Shape of M00: {M00.shape}")
-        #print(f"Shape of target[:self.T_ini*self.input_dims]: {target[:self.T_ini*self.input_dims].shape}")
+        # problem here if r is smaller than T_ini (see solution above)
+        M_bar[:,:M_x_initial_u.shape[1]] = M_x_initial_u
 
-        # problem here if r is smaller than T_ini
-        M00_bar[:,:M00.shape[1]] = M00
-
-        u_bar = solve(M00_bar+self.M_u, target-M01@target[:self.T_ini*self.input_dims])
-        #if not np.allclose(self.M_x@np.block([[u_bar[:self.T_ini,:]],[target[:self.T_ini,:]]]) + self.Mu@self.u_bar,target):
-            #print('u_bar problem')
-
+        u_bar = solve(M_bar+self.M_u, target-M_x_initial_y@target[:self.T_ini*self.input_dims])
+        '''
+        LHS: Represents the total influence of the inputs (both initial and future) on the future outputs.
+        RHS: target_subset = target[:self.T_ini * self.input_dims]: This is the subset of the target trajectory corresponding to the initial outputs.
+             M_x_initial_y @ target_subset: Calculates the influence of the initial outputs on the future outputs.
+             target - M_x_initial_y @ target_subset: Represents the desired future outputs after subtracting the effect of the initial outputs.
+        '''
 
         # Flatten
         u_ini = np.concatenate(self.u_ini).reshape(-1, 1)
         y_ini = np.concatenate(self.y_ini).reshape(-1, 1)
-        
         u_0 = np.concatenate(u_bar).reshape(-1, 1)
-        print(u_0)
-
         x = np.concatenate([u_ini, y_ini]).reshape(-1, 1)
+
+        # verification of u_bar
+        should_be_target = self.M_x @ x + self.M_u @ u_bar
+
+        if not np.allclose(should_be_target, target):
+            print('u_bar computation problem')
+        else:
+            print('u_bar computation verified successfully')
+        # ---------------------------------------------------------------------------
+
+
+
         w = self.M_u.T @ self.Q @ ((target - self.M_x @ x) + self.R @ u_0)
 
-        u_star = np.linalg.lstsq(self.G, w)[0]
+        u_star = np.linalg.lstsq(self.G, w, rcond= None)[0]
 
         if self.input_constrain_fkt is not None:
             u_star = projected_gradient_method(
