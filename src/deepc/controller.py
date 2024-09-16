@@ -160,7 +160,7 @@ class Controller:
         u_0 = np.concatenate(u_0).reshape(-1, 1)
 
         x = np.concatenate([u_ini, y_ini]).reshape(-1, 1)
-        w = self.M_u.T @ self.Q @ ((target - self.M_x @ x) + self.R @ u_0)
+        w = self.M_u.T @ self.Q @ (target - self.M_x @ x) + self.R @ u_0
 
         u_star = np.linalg.lstsq(self.G, w)[0]
 
@@ -217,6 +217,7 @@ class Controller:
         M_x_uini_extended[:,:M_x_uini.shape[1]] = M_x_uini
 
         u_bar = solve(M_x_uini_extended + self.M_u, target - M_x_yini@target[:self.T_ini*self.input_dims])
+        
         '''
         LHS: Represents the total influence of the inputs (both initial and future) on the future outputs.
         RHS: target_subset = target[:self.T_ini * self.input_dims]: This is the subset of the target trajectory corresponding to the initial outputs.
@@ -239,9 +240,7 @@ class Controller:
             print('u_bar computation verified successfully')
         # ---------------------------------------------------------------------------
 
-
-
-        w = self.M_u.T @ self.Q @ ((target - self.M_x @ x) + self.R @ u_0)
+        w = self.M_u.T @ self.Q @ (target - self.M_x @ x) + self.R @ u_0
 
         u_star = np.linalg.lstsq(self.G, w, rcond= None)[0]
 
