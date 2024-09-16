@@ -22,7 +22,7 @@ system = RandomNoiseDiscreteLTI(
        [0, 0, 0], 
        [0, 0, 0]],
     x_ini=[5.0, 5.0, 5.0],
-   noise_std=0.0
+   noise_std=0.05
 )
 
 print( "is it stable " ,system.is_stable())
@@ -75,7 +75,7 @@ chirp_sequence = generate_chirp_with_shift(length, num_channels, f0, f1, shift, 
 
 
 
-u_d =   chirp_sequence #   prbs_sequence#  
+u_d = prbs_sequence#    chirp_sequence #  
 
 # Apply it to the system
 y_d = system.apply_multiple(u_d)
@@ -124,6 +124,14 @@ plt.tight_layout()
 constraint = lambda u: np.clip(u, min_input, max_input)
 controller = Controller(u_d, y_d, T_ini, r_len, 1 , 0.01, input_constrain_fkt=constraint )
 
+# Initialize controller with regularization parameters and rank
+controller.initialize_regularization(
+    lambda_g=1e-2,  # Set lambda_g
+    lambda_y=1e-2,  # Set lambda_y
+    rank=10,  # Set desired rank for low-rank approximation
+)
+
+
 # Reset the system
 # to sepereate the offline data from the online data
 system.set_state([3, 3, 3])  # This is intentionally not the same state as x_ini
@@ -147,7 +155,7 @@ for i in range(len(r_online) - r_len):
     #print("u ss : ",[r, u_ss])
     #
     #u = controller.apply(r)[0]
-    u = controller.apply_trajectory_tracking_version(r)[0]#u_ss
+    u = controller.apply_regularized(r)[0]#u_ss
     y = system.apply(u)#
     controller.update(u, y)
     u_online.append(u)

@@ -5,6 +5,10 @@ from numpy.linalg import matrix_rank, svd
 from .math_deepc import hankel_matrix, projected_gradient_method
 from .deepc import as_column_vector, check_dimensions
 
+# noise rejection version only
+from typing import List, Optional
+from cvxpy import Variable, Minimize, Problem, sum_squares, norm1, hstack, vstack, Parameter, Constraint
+    
 
 class Controller:
     def __init__(
@@ -48,6 +52,9 @@ class Controller:
 
         check_dimensions(u_d, "u_d", offline_len, self.input_dims)
         check_dimensions(y_d, "y_d", offline_len, self.output_dims)
+
+        self.u_d = u_d
+        self.y_d = y_d
 
         Q_size = target_len * self.output_dims
         if isinstance(Q, (int, float)):
@@ -255,7 +262,143 @@ class Controller:
             )
 
         return u_star.reshape(-1, self.input_dims)
+    
+    def initialize_regularization(self, lambda_g, lambda_y, rank):
 
+        self.lambda_g = lambda_g
+        self.lambda_y = lambda_y
+        self.rank = rank
+
+        # Create Hankel matrices
+        U = hankel_matrix(self.T_ini + self.target_len, self.u_d)
+        U_p = U[: self.T_ini * self.input_dims, :]  # past inputs
+        U_f = U[self.T_ini * self.input_dims :, :]  # future inputs
+        Y = hankel_matrix(self.T_ini + self.target_len, self.y_d)
+        Y_p = Y[: self.T_ini * self.output_dims, :]  # past outputs
+        Y_f = Y[self.T_ini * self.output_dims :, :]  # future outputs
+
+        # Low-rank approximation
+        if self.rank is not None:
+            # Concatenate data matrices
+            Data = np.vstack([U_p, Y_p, U_f, Y_f])
+
+            # Perform SVD
+            U_svd, S_svd, Vh_svd = svd(Data, full_matrices=False)
+
+            # Truncate to the specified rank
+            U_svd_truncated = U_svd[:, : self.rank]
+            S_svd_truncated = S_svd[: self.rank]
+            Vh_svd_truncated = Vh_svd[: self.rank, :]
+
+            # Reconstruct the data matrices
+            Data_approx = U_svd_truncated @ np.diag(S_svd_truncated) @ Vh_svd_truncated
+
+            # Split the approximated data matrices
+            split_idx1 = U_p.shape[0]
+            split_idx2 = split_idx1 + Y_p.shape[0]
+            split_idx3 = split_idx2 + U_f.shape[0]
+
+            U_p = Data_approx[:split_idx1, :]
+            Y_p = Data_approx[split_idx1:split_idx2, :]
+            U_f = Data_approx[split_idx2:split_idx3, :]
+            Y_f = Data_approx[split_idx3:, :]
+
+        # Store the data matrices
+        self.U_p = U_p
+        self.Y_p = Y_p
+        self.U_f = U_f
+        self.Y_f = Y_f
+
+        # For convenience, precompute some dimensions
+        self.dim_g = U_p.shape[1]
+        self.dim_u = self.input_dims * self.target_len
+        self.dim_y = self.output_dims * self.target_len
+        self.dim_sigma_y = self.output_dims * self.T_ini
+
+        # Identity matrices
+        self.I_u = np.eye(self.dim_u)
+        self.I_y = np.eye(self.dim_y)
+
+
+    def apply_regularized(
+        self,
+        target: List[float],
+        u_constraints: Optional[Callable[[Variable], List[Constraint]]] = None,
+        y_constraints: Optional[Callable[[Variable], List[Constraint]]] = None,
+    ) -> Optional[np.ndarray]:
+        """
+        Returns the optimal control for a given reference trajectory
+        using the regularized DeePC algorithm.
+        Args:
+            target: Target system outputs, optimal control tries to reach.
+            u_constraints: Function to apply input constraints.
+            y_constraints: Function to apply output constraints.
+        """
+        if not self.is_initialized():
+            return None
+
+        # Convert target to column vector
+        target = np.concatenate(target).reshape(-1, 1)
+        check_dimensions(target, "target", self.dim_y, 1)
+
+        target_cvx = Parameter((self.dim_y, 1), value=target)
+
+        # Flatten initial inputs and outputs
+        u_ini = np.concatenate(self.u_ini).reshape(-1, 1)
+        y_ini = np.concatenate(self.y_ini).reshape(-1, 1)
+
+        g = Variable((self.dim_g, 1))
+        u = Variable((self.dim_u, 1))
+        y = Variable((self.dim_y, 1))
+        sigma_y = Variable((self.dim_sigma_y, 1))
+
+        # Constraint matrices
+        A = vstack([
+            self.U_p,
+            self.Y_p,
+            self.U_f,
+            self.Y_f
+        ])
+
+        # Right-hand side
+        b = vstack([
+            u_ini + sigma_y,
+            y_ini,
+            u,
+            y
+        ])
+
+        # Formulate the constraints
+        constraints = [A @ g == b]
+
+        # Add input and output constraints if provided
+        if u_constraints is not None:
+            constraints += u_constraints(u)
+
+        if y_constraints is not None:
+            constraints += y_constraints(y)
+
+        # Cost function
+        cost = sum_squares(self.Q @ (y - target_cvx)) + sum_squares(self.R @ u)
+        cost += self.lambda_g * norm1(g) + self.lambda_y * norm1(sigma_y)
+
+        # Define and solve the problem
+        problem = Problem(Minimize(cost), constraints)
+        problem.solve(solver='OSQP')
+        #problem.solve(solver='SCS')  # or try 'ECOS', 'MOSEK', etc.
+
+        # Check if the problem was solved
+        if problem.status not in ["optimal", "optimal_inaccurate"]:
+            print("Problem not solved to optimality.")
+            return None
+
+        # Extract optimal control input
+        u_star = u.value
+
+        # Reshape to match input dimensions
+        u_star = u_star.reshape(-1, self.input_dims)
+
+        return u_star
 
     def assess_matrix_quality(self,matrix):
         """ Assess the quality of the matrix using rank, condition number, and singular values. """
