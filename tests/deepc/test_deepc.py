@@ -41,6 +41,14 @@ class Test_1D_in_1D_out_LTI(unittest.TestCase):
         y_star = self.system.apply_multiple(u_star)
         np.testing.assert_array_almost_equal(y_star, self.target)
 
+    def test_offset(self):
+        u_star = deePC(self.u_d, self.y_d, self.u_ini, self.y_ini, self.target, u_0=[[10], [10]], R=0.001)
+
+        # Apply the control input to the system
+        # to see if the output matches the target
+        y_star = self.system.apply_multiple(u_star)
+        np.testing.assert_array_almost_equal(y_star, self.target, decimal=1)
+
 
 class Test_2D_in_3D_out_LTI(unittest.TestCase):
     def setUp(self):
