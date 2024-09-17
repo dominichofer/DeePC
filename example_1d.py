@@ -39,7 +39,7 @@ r_len = 10 # bigger or equal to T_ini. (might be able to change this)
 data_quality(u_d, y_d, T_ini, r_len, 1.0, 0.001)
 
 # Define the controller
-controller = Controller(u_d, y_d, T_ini, r_len, 1.0,0.001, input_constrain_fkt=lambda u: np.clip(u, 0, 100))
+controller = Controller(u_d, y_d, T_ini, r_len, 1.0,0.1, input_constrain_fkt=lambda u: np.clip(u, 0, 100))
 
 # Reset the system
 # to sepereate the offline data from the online data
@@ -57,8 +57,8 @@ y_online = []
 r_online = [[0]] * 20 + [[10]] * 100 + [[7]] * 100 + [[40]] * 100
 for i in range(len(r_online) - r_len):
     r = r_online[i: i + r_len]
-    #u = controller.apply(r)[0]
-    u = controller.apply_trajectory_tracking_version(r)[0]
+    u = controller.apply(r)[0]
+    #u = controller.apply_trajectory_tracking_version(r)[0]
     y = system.apply(u)
     controller.update(u, y)
     u_online.append(u)

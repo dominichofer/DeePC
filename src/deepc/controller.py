@@ -189,8 +189,8 @@ class Controller:
         self, target: list | None = None
     ) -> list[float] | None:
         from scipy.linalg import solve
-        u_0 = np.zeros((self.target_len, self.input_dims))
-        u_0 = np.concatenate(u_0).reshape(-1, 1)
+        #u_0 = np.zeros((self.target_len, self.input_dims))
+        #u_0 = np.concatenate(u_0).reshape(-1, 1)
         """
         Returns the optimal control for a given reference trajectory
         Args:
@@ -239,14 +239,15 @@ class Controller:
         x     = np.concatenate([u_ini, y_ini]).reshape(-1, 1)
 
         # verification of u_bar
-        should_be_target = self.M_x @ x + self.M_u @ u_bar
+        should_be_target = self.M_x @ x + self.M_u @ -u_bar
 
         if not np.allclose(should_be_target, target):
             print('u_bar computation problem')
-            u_0 = np.zeros_like(u_0)
+            #u_0 = np.zeros_like(u_0)
         else:
             print('u_bar computation verified successfully')
-            u_0 = u_bar
+
+        u_0 = u_bar
         # ---------------------------------------------------------------------------
 
         w = self.M_u.T @ self.Q @ (target - self.M_x @ x) + self.R @ u_0

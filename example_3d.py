@@ -37,7 +37,7 @@ shift = 6
 samples_n = 5
 
 # Usage example: seems to be with noise good controller
-length = 90
+length = 150
 num_channels = 3
 levels = [min_input, max_input]
 shift = 7
@@ -120,7 +120,7 @@ plt.tight_layout()
 
 # Define the controller
 constraint = lambda u: np.clip(u, min_input, max_input)
-controller = Controller(u_d, y_d, T_ini, r_len, 0.1 , 1, input_constrain_fkt=constraint )
+controller = Controller(u_d, y_d, T_ini, r_len, 1 , 0.1, input_constrain_fkt=constraint )
 
 # Reset the system
 # to sepereate the offline data from the online data
@@ -144,8 +144,8 @@ for i in range(len(r_online) - r_len):
     r = r_online[i: i + r_len]
     #print("u ss : ",[r, u_ss])
     #
-    u = controller.apply(r)[0]
-    #u = controller.apply_trajectory_tracking_version(r)[0]#u_ss
+    #u = controller.apply(r)[0]
+    u = controller.apply_trajectory_tracking_version(r)[0]#u_ss
     y = system.apply(u)#
     controller.update(u, y)
     u_online.append(u)
