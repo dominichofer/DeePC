@@ -73,9 +73,7 @@ chirp_sequence = generate_chirp_with_shift(length, num_channels, f0, f1, shift, 
 
 
 
-
-
-u_d =   chirp_sequence #   prbs_sequence#  
+u_d = prbs_sequence #    chirp_sequence #   
 
 # Apply it to the system
 y_d = system.apply_multiple(u_d)
@@ -87,10 +85,10 @@ print("data size ", np.shape(u_d))
 
 # Define how many steps the controller should look back
 # to grasp the current state of the system
-T_ini = 3
+T_ini = 5
 
 # Define how many steps the controller should look forward
-r_len = 3
+r_len = 5
 
 data_quality(u_d, y_d, T_ini, r_len, 1 , 0.001)
 
@@ -122,7 +120,7 @@ plt.tight_layout()
 
 # Define the controller
 constraint = lambda u: np.clip(u, min_input, max_input)
-controller = Controller(u_d, y_d, T_ini, r_len, 1 , 0.01, input_constrain_fkt=constraint )
+controller = Controller(u_d, y_d, T_ini, r_len, 0.1 , 1, input_constrain_fkt=constraint )
 
 # Reset the system
 # to sepereate the offline data from the online data
@@ -146,15 +144,15 @@ for i in range(len(r_online) - r_len):
     r = r_online[i: i + r_len]
     #print("u ss : ",[r, u_ss])
     #
-    #u = controller.apply(r)[0]
-    u = controller.apply_trajectory_tracking_version(r)[0]#u_ss
+    u = controller.apply(r)[0]
+    #u = controller.apply_trajectory_tracking_version(r)[0]#u_ss
     y = system.apply(u)#
     controller.update(u, y)
     u_online.append(u)
     y_online.append(y)
     r_online.append(r)
 
-    #u_ss = [(u[i] * (1 - l)) + (u_ss[i] * l) for i in range(len(u))]
+    u_ss = [(u[i] * (1 - l)) + (u_ss[i] * l) for i in range(len(u))]
     #u_ss = np.zeros_like(u_ss)
     #print("u ss : ", u_ss)
 

@@ -136,9 +136,9 @@ controller = Controller(u_d, y_d, T_ini, r_len, 1 , 0.01, input_constrain_fkt=co
 
 # Initialize controller with regularization parameters and rank
 controller.initialize_regularization(
-    lambda_g=0.9,  # Set lambda_g
-    lambda_y=0.9,  # Set lambda_y
-    rank=3,  # Set desired rank for low-rank approximation
+    lambda_g=300,  # Set lambda_g
+    lambda_y=10e5,  # Set lambda_y
+    rank=8,  # set desired rank for low-rank approximation
 )
 
 
@@ -163,9 +163,10 @@ for i in range(len(r_online) - r_len):
     u1 = controller.apply(r)[0]
     u2 = controller.apply_regularized(r)[0]
     u_out = u2
+    u = u_out
     y = system.apply(u_out)
     controller.update(u_out, y)
-    u_online.append(u)
+    u_online.append(u_out)
     y_online.append(y)
     r_online.append(r)
 

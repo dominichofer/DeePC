@@ -169,7 +169,7 @@ class Controller:
         x = np.concatenate([u_ini, y_ini]).reshape(-1, 1)
         w = self.M_u.T @ self.Q @ (target - self.M_x @ x) + self.R @ u_0
 
-        u_star = np.linalg.lstsq(self.G, w)[0]
+        u_star = np.linalg.lstsq(self.G, w, rcond=None)[0]
 
         if self.input_constrain_fkt is not None:
             u_star = projected_gradient_method(
@@ -191,6 +191,8 @@ class Controller:
         self, target: list | None = None
     ) -> list[float] | None:
         from scipy.linalg import solve
+        u_0 = np.zeros((self.target_len, self.input_dims))
+        u_0 = np.concatenate(u_0).reshape(-1, 1)
         """
         Returns the optimal control for a given reference trajectory
         Args:
@@ -235,16 +237,18 @@ class Controller:
         # Flatten
         u_ini = np.concatenate(self.u_ini).reshape(-1, 1)
         y_ini = np.concatenate(self.y_ini).reshape(-1, 1)
-        u_0 = np.concatenate(u_bar).reshape(-1, 1)
-        x = np.concatenate([u_ini, y_ini]).reshape(-1, 1)
+        u_bar = np.concatenate(u_bar).reshape(-1, 1)
+        x     = np.concatenate([u_ini, y_ini]).reshape(-1, 1)
 
         # verification of u_bar
-        should_be_target = self.M_x @ x + self.M_u @ u_0
+        should_be_target = self.M_x @ x + self.M_u @ u_bar
 
         if not np.allclose(should_be_target, target):
             print('u_bar computation problem')
+            u_0 = np.zeros_like(u_0)
         else:
             print('u_bar computation verified successfully')
+            u_0 = u_bar
         # ---------------------------------------------------------------------------
 
         w = self.M_u.T @ self.Q @ (target - self.M_x @ x) + self.R @ u_0
@@ -279,19 +283,32 @@ class Controller:
 
         # Low-rank approximation
         if self.rank is not None:
+            rank = self.rank
             # Concatenate data matrices
             Data = np.vstack([U_p, Y_p, U_f, Y_f])
+            print(f"Original Data shape: {Data.shape}")
+            print(f"Original U_p shape: {U_p.shape}")
+            print(f"Original Y_p shape: {Y_p.shape}")
+            print(f"Original U_f shape: {U_f.shape}")
+            print(f"Original Y_f shape: {Y_f.shape}")     
 
             # Perform SVD
             U_svd, S_svd, Vh_svd = svd(Data, full_matrices=False)
+            print(f"U_svd shape: {U_svd.shape}")
+            print(f"S_svd shape: {S_svd.shape}")
+            print(f"Vh_svd shape: {Vh_svd.shape}")
 
             # Truncate to the specified rank
-            U_svd_truncated = U_svd[:, : self.rank]
-            S_svd_truncated = S_svd[: self.rank]
-            Vh_svd_truncated = Vh_svd[: self.rank, :]
+            U_svd_truncated = U_svd[:, :rank]
+            S_svd_truncated = S_svd[:rank]
+            Vh_svd_truncated = Vh_svd[:rank, :]
+            print(f"Truncated U_svd shape: {U_svd_truncated.shape}")
+            print(f"Truncated S_svd shape: {S_svd_truncated.shape}")
+            print(f"Truncated Vh_svd shape: {Vh_svd_truncated.shape}")
 
             # Reconstruct the data matrices
             Data_approx = U_svd_truncated @ np.diag(S_svd_truncated) @ Vh_svd_truncated
+            print(f"Approximated Data shape: {Data_approx.shape}")
 
             # Split the approximated data matrices
             split_idx1 = U_p.shape[0]
@@ -302,6 +319,12 @@ class Controller:
             Y_p = Data_approx[split_idx1:split_idx2, :]
             U_f = Data_approx[split_idx2:split_idx3, :]
             Y_f = Data_approx[split_idx3:, :]
+
+            # Print the final shapes
+            print(f"Final U_p shape: {U_p.shape}")
+            print(f"Final Y_p shape: {Y_p.shape}")
+            print(f"Final U_f shape: {U_f.shape}")
+            print(f"Final Y_f shape: {Y_f.shape}")                                                                                  
 
         # Store the data matrices
         self.U_p = U_p
@@ -384,7 +407,7 @@ class Controller:
 
         # Define and solve the problem
         problem = Problem(Minimize(cost), constraints)
-        problem.solve(solver='OSQP')
+        problem.solve(solver='OSQP', verbose = True)
         #problem.solve(solver='SCS')  # or try 'ECOS', 'MOSEK', etc.
 
         # Check if the problem was solved
