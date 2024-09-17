@@ -138,9 +138,7 @@ class Controller:
         self.u_ini.clear()
         self.y_ini.clear()
 
-    def apply(
-        self, target: list | np.ndarray, u_0: list | np.ndarray | None = None
-    ) -> list[float] | None:
+    def apply(self, target: list | np.ndarray, u_0: list | np.ndarray | None = None) -> list[float] | None:
         """
         Returns the optimal control for a given reference trajectory
         or None if the controller is not initialized.
