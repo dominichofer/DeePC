@@ -128,9 +128,7 @@ class Controller:
         self.u_ini.clear()
         self.y_ini.clear()
 
-    def apply(
-        self, target: list | np.ndarray, u_0: list | np.ndarray | None = None
-    ) -> list[float] | None:
+    def apply(self, target: list | np.ndarray, u_0: list | np.ndarray | None = None) -> list[float] | None:
         """
         Returns the optimal control for a given reference trajectory
         or None if the controller is not initialized.
@@ -160,6 +158,64 @@ class Controller:
         w = self.M_u.T @ self.Q @ (target - self.M_x @ x) + self.R @ u_0
 
         u_star = np.linalg.lstsq(self.G, w)[0]
+
+        if self.input_constrain_fkt is not None:
+            u_star = projected_gradient_method(
+                self.G,
+                u_star,
+                w,
+                self.input_constrain_fkt,
+                self.max_pgm_iterations,
+                self.pgm_tolerance,
+            )
+
+        return u_star.reshape(-1, self.input_dims)
+
+    def apply_trajectory_tracking_version(self, target: list | np.ndarray) -> list[float] | None:
+        """
+        Returns the optimal control for a given reference trajectory
+        Args:
+            target: Target system outputs, optimal control tries to reach.
+            u_bar: Computes u_bar from the system
+        """
+        if not self.is_initialized():
+            return None
+
+        target = as_column_vector(target)
+        check_dimensions(target, "target", self.target_len, self.output_dims)
+
+        # Compute effective T_ini based on target length (for r smaller T_ini error)
+        # effective_T_ini = min(self.T_ini, len(target) // self.output_dims) todo, still not working
+
+        M_x_uini = self.M_x[:, : self.T_ini * self.input_dims]
+        M_x_yini = self.M_x[:, self.T_ini * self.input_dims :]
+        M_x_uini_extended = np.zeros_like(self.M_u)
+
+        target = np.concatenate(target).reshape(-1, 1)
+
+        # problem here if r is smaller than T_ini (see solution above)
+        M_x_uini_extended[:, : M_x_uini.shape[1]] = M_x_uini
+
+        u_bar = np.linalg.solve(M_x_uini_extended + self.M_u, target - M_x_yini @ target[: self.T_ini * self.input_dims])
+
+        # Flatten
+        u_ini = np.concatenate(self.u_ini).reshape(-1, 1)
+        y_ini = np.concatenate(self.y_ini).reshape(-1, 1)
+        u_0 = np.concatenate(u_bar).reshape(-1, 1)
+        x = np.concatenate([u_ini, y_ini]).reshape(-1, 1)
+
+        # verification of u_bar
+        should_be_target = self.M_x @ x + self.M_u @ u_0
+
+        if not np.allclose(should_be_target, target):
+            print("u_bar computation problem")
+        else:
+            print("u_bar computation verified successfully")
+        # ---------------------------------------------------------------------------
+
+        w = self.M_u.T @ self.Q @ (target - self.M_x @ x) + self.R @ u_0
+
+        u_star = np.linalg.lstsq(self.G, w, rcond=None)[0]
 
         if self.input_constrain_fkt is not None:
             u_star = projected_gradient_method(
