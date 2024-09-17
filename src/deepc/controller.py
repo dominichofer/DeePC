@@ -239,11 +239,11 @@ class Controller:
         x     = np.concatenate([u_ini, y_ini]).reshape(-1, 1)
 
         # verification of u_bar
-        should_be_target = self.M_x @ x + self.M_u @ -u_bar
+        should_be_target = self.M_x @ x + self.M_u @ u_bar
 
         if not np.allclose(should_be_target, target):
             print('u_bar computation problem')
-            #u_0 = np.zeros_like(u_0)
+            u_0 = np.zeros_like(u_bar)
         else:
             print('u_bar computation verified successfully')
 

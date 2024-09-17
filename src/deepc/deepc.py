@@ -223,7 +223,6 @@ def data_quality(
 
     G = M_u.T @ Q @ M_u + R
 
-
     print(f"Dominant Dimensions and max drop for U: {dominant_dim_and_find_max_drop(U,"U")}")
     print(f"Dominant Dimensions and max drop for Y: {dominant_dim_and_find_max_drop(Y,"Y")}")
 
