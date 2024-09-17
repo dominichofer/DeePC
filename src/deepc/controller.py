@@ -267,7 +267,7 @@ class Controller:
 
         self.lambda_g = lambda_g
         self.lambda_y = lambda_y
-        self.rank = rank
+        self.rank     = rank
 
         # Create Hankel matrices
         U = hankel_matrix(self.T_ini + self.target_len, self.u_d)
@@ -362,8 +362,8 @@ class Controller:
 
         # Right-hand side
         b = vstack([
-            u_ini + sigma_y,
-            y_ini,
+            u_ini,
+            y_ini + sigma_y,
             u,
             y
         ])

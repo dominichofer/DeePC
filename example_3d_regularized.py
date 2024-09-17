@@ -87,10 +87,10 @@ print("data size ", np.shape(u_d))
 
 # Define how many steps the controller should look back
 # to grasp the current state of the system
-T_ini = 3
+T_ini = 15
 
 # Define how many steps the controller should look forward
-r_len = 3
+r_len = 7
 
 data_quality(u_d, y_d, T_ini, r_len, 1 , 0.001)
 
@@ -119,6 +119,16 @@ plt.legend()
 plt.tight_layout()
 #plt.show()
 
+def u_constraints(u):
+    return [u >= min_input, u <= max_input]
+
+y_min = 0
+y_max = 300
+
+def y_constraints(y):
+    return [y >= y_min, y <= y_max]
+
+
 
 # Define the controller
 constraint = lambda u: np.clip(u, min_input, max_input)
@@ -126,9 +136,9 @@ controller = Controller(u_d, y_d, T_ini, r_len, 1 , 0.01, input_constrain_fkt=co
 
 # Initialize controller with regularization parameters and rank
 controller.initialize_regularization(
-    lambda_g=1e-2,  # Set lambda_g
-    lambda_y=1e-2,  # Set lambda_y
-    rank=10,  # Set desired rank for low-rank approximation
+    lambda_g=0.9,  # Set lambda_g
+    lambda_y=0.9,  # Set lambda_y
+    rank=3,  # Set desired rank for low-rank approximation
 )
 
 
@@ -142,9 +152,7 @@ while not controller.is_initialized():
     y = system.apply(u)
     controller.update(u, y)
 
-#exp discarded filter
-l = 0.9
-u_ss = [0.1, 0.1, 0.1]
+
 
 # Simulate the system
 u_online = []
@@ -152,19 +160,15 @@ y_online = []
 r_online = [[0, 6, 0]] * 200 + [[0, 0, -1]] * 200 + [[7, 4, 1]] * 200 + [[0, 7, 2]] * 200
 for i in range(len(r_online) - r_len):
     r = r_online[i: i + r_len]
-    #print("u ss : ",[r, u_ss])
-    #
-    #u = controller.apply(r)[0]
-    u = controller.apply_regularized(r)[0]#u_ss
-    y = system.apply(u)#
-    controller.update(u, y)
+    u1 = controller.apply(r)[0]
+    u2 = controller.apply_regularized(r)[0]
+    u_out = u2
+    y = system.apply(u_out)
+    controller.update(u_out, y)
     u_online.append(u)
     y_online.append(y)
     r_online.append(r)
 
-    #u_ss = [(u[i] * (1 - l)) + (u_ss[i] * l) for i in range(len(u))]
-    #u_ss = np.zeros_like(u_ss)
-    #print("u ss : ", u_ss)
 
 
 
