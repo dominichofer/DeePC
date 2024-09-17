@@ -241,13 +241,14 @@ class Controller:
         # verification of u_bar
         should_be_target = self.M_x @ x + self.M_u @ u_bar
 
-        if not np.allclose(should_be_target, target):
-            print('u_bar computation problem')
+        if not np.allclose(should_be_target, target, rtol = 0.2): # seems to be a good boundery. interesting things happen at ref change
+            print('u_bar computation off')
+            print('computed ss target ', should_be_target.tolist())
+            print('given       target ', target.tolist())
             u_0 = np.zeros_like(u_bar)
         else:
             print('u_bar computation verified successfully')
-
-        u_0 = u_bar
+            u_0 = u_bar
         # ---------------------------------------------------------------------------
 
         w = self.M_u.T @ self.Q @ (target - self.M_x @ x) + self.R @ u_0

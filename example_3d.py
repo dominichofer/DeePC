@@ -37,7 +37,7 @@ shift = 6
 samples_n = 5
 
 # Usage example: seems to be with noise good controller
-length = 150
+length = 100
 num_channels = 3
 levels = [min_input, max_input]
 shift = 17
@@ -85,12 +85,12 @@ print("data size ", np.shape(u_d))
 
 # Define how many steps the controller should look back
 # to grasp the current state of the system
-T_ini = 5
+T_ini = 10
 
 # Define how many steps the controller should look forward
-r_len = 5
+r_len = 10
 
-data_quality(u_d, y_d, T_ini, r_len, 1 , 0.001)
+data_quality(u_d, y_d, T_ini, r_len, 1 , 0.01)
 
 
 plt.figure(figsize=(12, 8))
@@ -120,7 +120,7 @@ plt.tight_layout()
 
 # Define the controller
 constraint = lambda u: np.clip(u, min_input, max_input)
-controller = Controller(u_d, y_d, T_ini, r_len, 1 , 0.001, input_constrain_fkt=constraint )
+controller = Controller(u_d, y_d, T_ini, r_len, 1 , 0.01, input_constrain_fkt=constraint )
 
 # Reset the system
 # to sepereate the offline data from the online data
@@ -139,7 +139,7 @@ u_ss = [0.1, 0.1, 0.1]
 # Simulate the system
 u_online = []
 y_online = []
-r_online = [[6, 6, 6]] * 200 + [[5, 4, 3]] * 200 + [[3, 2, 1]] * 200 + [[0, -3, -1]] * 200
+r_online = [[6, 5.5, 5]] * 200 + [[5, 4, 3]] * 200 + [[2, 0, -1]] * 200 + [[1, 0, -2]] * 200
 for i in range(len(r_online) - r_len):
     r = r_online[i: i + r_len]
     #print("u ss : ",[r, u_ss])
