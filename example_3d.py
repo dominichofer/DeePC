@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from deepc import Controller, RandomNoiseDiscreteLTI, generate_prbs_with_shift, data_quality, generate_chirp_with_shift
 
-max_input = 8
-min_input = -3.0
+max_input = 7
+min_input = -5.0
 
 
 # Define a system
@@ -12,9 +12,9 @@ system = RandomNoiseDiscreteLTI(
     A=[[0.8, 0.05, 0.1], 
        [0.02, 0.8, 0.1], 
        [0.01, 0.02, 0.7]],
-    B=[[0.1, 0, 0], 
-       [0, 0.14, 0], 
-       [0, 0,  0.28]],
+    B=[[0.15, 0, 0], 
+       [0, 0.24, 0], 
+       [0, 0,  0.48]],
     C=[[1.1, 0, 0], 
        [0, 1.3, 0], 
        [0, 0, 0.8]],
@@ -22,11 +22,49 @@ system = RandomNoiseDiscreteLTI(
        [0, 0, 0], 
        [0, 0, 0]],
     x_ini=[5.0, 5.0, 5.0],
-   noise_std=0.05
+   noise_std=0.1
 )
 
 print( "is it stable " ,system.is_stable())
 
+
+
+# Function to generate smooth sine-based trajectories for continuous change
+def generate_sine_wave_trajectory(amplitudes, frequency, phase_shift, length):
+    t = np.linspace(0, length, length)
+    return np.array([amplitudes[i] * np.sin(frequency * t + phase_shift[i]) for i in range(3)]).T
+
+# Function to generate exponential-based trajectories for continuous change
+def generate_exponential_trajectory(start_values, decay_rate, length):
+    t = np.linspace(0, length, length)
+    return np.array([start_values[i] * np.exp(-decay_rate * t) for i in range(3)]).T
+
+# Function to generate polynomial-based trajectories for continuous change
+def generate_polynomial_trajectory(coefficients, length):
+    t = np.linspace(0, length, length)
+    return np.array([np.polyval(coefficients[i], t) for i in range(3)]).T
+
+# Parameters for the trajectory generation
+length = 200
+amplitudes = [6, 5, 4]
+frequency = 0.05
+phase_shift = [0, np.pi / 4, np.pi / 2]  # Different phase shifts for variety
+decay_rate = 0.01
+start_values = [6, 5, 4]
+polynomial_coefficients = [[0.001, 0.01, 6], [0.001, 0.005, 5], [0.001, 0.01, 4]]  # Example polynomials
+
+# Generate different parts of the trajectory
+sine_wave_trajectory = generate_sine_wave_trajectory(amplitudes, frequency, phase_shift, length)
+exponential_trajectory = generate_exponential_trajectory(start_values, decay_rate, length)
+polynomial_trajectory = generate_polynomial_trajectory(polynomial_coefficients, 100)
+sine_wave_trajectory2 = generate_sine_wave_trajectory(amplitudes, frequency, phase_shift, length*2)
+exponential_trajectory2 = generate_exponential_trajectory(start_values, decay_rate, length)
+
+# Combine all trajectories into one continuously changing trajectory
+r_online_dynamic = np.vstack((sine_wave_trajectory, exponential_trajectory, polynomial_trajectory, sine_wave_trajectory2, exponential_trajectory2))
+
+
+print(r_online_dynamic)
 
 # pribs ..................................................................................
 # Usage example: seems to be the minimum "perfect" controller
@@ -139,18 +177,18 @@ u_ss = [0.1, 0.1, 0.1]
 # Simulate the system
 u_online = []
 y_online = []
-r_online = [[6, 5.5, 5]] * 100 + [[5, 4, 3]] * 100 + [[2, 0, -1]] * 100 + [[1, 0, -2]] * 100
+r_online = r_online_dynamic#[[6, 5.5, 5]] * 100 + [[5, 4, 3]] * 100 + [[2, 0, -1]] * 50 + [[1, 0, -2]] * 50 +  [[6, 5, 4]] * 50 + [[-1, -1, -2]] * 100
 for i in range(len(r_online) - r_len):
     r = r_online[i: i + r_len]
     #print("u ss : ",[r, u_ss])
-    #
-    u = controller.apply(r , [u_ss]* len(r))[0]
-    #u = controller.apply_trajectory_tracking_version(r)[0]#u_ss
-    y = system.apply(u)#
+    #u = controller.apply(r , [u_ss]* len(r))[0]
+    u = controller.apply_trajectory_tracking_version(r)[0]#u_ss
+    y = system.apply(u)
     controller.update(u, y)
     u_online.append(u)
     y_online.append(y)
-    r_online.append(r)
+    r_online = np.vstack((r_online, r))
+    #r_online.append(r)
 
     u_ss = [(u[i] * (1 - l)) + (u_ss[i] * l) for i in range(len(u))]
     #u_ss = np.zeros_like(u_ss)
