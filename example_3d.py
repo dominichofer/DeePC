@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from deepc import Controller, RandomNoiseDiscreteLTI, generate_prbs_with_shift, data_quality, generate_chirp_with_shift
 
-max_input = 5
-min_input = -2.0
+max_input = 8
+min_input = -3.0
 
 
 # Define a system
@@ -12,9 +12,9 @@ system = RandomNoiseDiscreteLTI(
     A=[[0.8, 0.05, 0.1], 
        [0.02, 0.8, 0.1], 
        [0.01, 0.02, 0.7]],
-    B=[[0.3, 0, 0], 
-       [0, 0.2, 0], 
-       [0, 0, 0.4]],
+    B=[[0.1, 0, 0], 
+       [0, 0.14, 0], 
+       [0, 0,  0.28]],
     C=[[1.1, 0, 0], 
        [0, 1.3, 0], 
        [0, 0, 0.8]],
@@ -22,7 +22,7 @@ system = RandomNoiseDiscreteLTI(
        [0, 0, 0], 
        [0, 0, 0]],
     x_ini=[5.0, 5.0, 5.0],
-   noise_std=0.0
+   noise_std=0.05
 )
 
 print( "is it stable " ,system.is_stable())
@@ -37,7 +37,7 @@ shift = 6
 samples_n = 5
 
 # Usage example: seems to be with noise good controller
-length = 100
+length = 200
 num_channels = 3
 levels = [min_input, max_input]
 shift = 17
@@ -60,7 +60,7 @@ u_d = [[x,y,z] for x in range(iterator) for y in range(iterator) for z in range(
 
 
 # chirp -------------------------------------------
-length = 100
+length = 200
 num_channels = 3
 f0 = 1  # Start frequency in Hz
 f1 = 100.0  # End frequency in Hz
@@ -73,7 +73,7 @@ chirp_sequence = generate_chirp_with_shift(length, num_channels, f0, f1, shift, 
 
 
 
-u_d = prbs_sequence #    chirp_sequence #   
+u_d = chirp_sequence #    prbs_sequence # chirp_sequence # 
 
 # Apply it to the system
 y_d = system.apply_multiple(u_d)
@@ -139,13 +139,13 @@ u_ss = [0.1, 0.1, 0.1]
 # Simulate the system
 u_online = []
 y_online = []
-r_online = [[6, 5.5, 5]] * 200 + [[5, 4, 3]] * 200 + [[2, 0, -1]] * 200 + [[1, 0, -2]] * 200
+r_online = [[6, 5.5, 5]] * 100 + [[5, 4, 3]] * 100 + [[2, 0, -1]] * 100 + [[1, 0, -2]] * 100
 for i in range(len(r_online) - r_len):
     r = r_online[i: i + r_len]
     #print("u ss : ",[r, u_ss])
     #
-    #u = controller.apply(r)[0]
-    u = controller.apply_trajectory_tracking_version(r)[0]#u_ss
+    u = controller.apply(r , [u_ss]* len(r))[0]
+    #u = controller.apply_trajectory_tracking_version(r)[0]#u_ss
     y = system.apply(u)#
     controller.update(u, y)
     u_online.append(u)

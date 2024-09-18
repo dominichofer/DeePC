@@ -22,7 +22,7 @@ system = RandomNoiseDiscreteLTI(
        [0, 0, 0], 
        [0, 0, 0]],
     x_ini=[5.0, 5.0, 5.0],
-   noise_std=0.05
+   noise_std=0.01
 )
 
 print( "is it stable " ,system.is_stable())
@@ -75,7 +75,7 @@ chirp_sequence = generate_chirp_with_shift(length, num_channels, f0, f1, shift, 
 
 
 
-u_d = prbs_sequence#    chirp_sequence #  
+u_d = chirp_sequence #prbs_sequence#    chirp_sequence #  
 
 # Apply it to the system
 y_d = system.apply_multiple(u_d)
@@ -87,7 +87,7 @@ print("data size ", np.shape(u_d))
 
 # Define how many steps the controller should look back
 # to grasp the current state of the system
-T_ini = 15
+T_ini = 10
 
 # Define how many steps the controller should look forward
 r_len = 7
@@ -132,13 +132,13 @@ def y_constraints(y):
 
 # Define the controller
 constraint = lambda u: np.clip(u, min_input, max_input)
-controller = Controller(u_d, y_d, T_ini, r_len, 1 , 0.01, input_constrain_fkt=constraint )
+controller = Controller(u_d, y_d, T_ini, r_len, 1 , 0.0001, input_constrain_fkt=constraint )
 
 # Initialize controller with regularization parameters and rank
 controller.initialize_regularization(
-    lambda_g=300,  # Set lambda_g
-    lambda_y=10e5,  # Set lambda_y
-    rank=8,  # set desired rank for low-rank approximation
+    lambda_g=0.01,  # Set lambda_g
+    lambda_y=0.01,  # Set lambda_y
+    rank=10,  # set desired rank for low-rank approximation
 )
 
 
@@ -156,17 +156,18 @@ while not controller.is_initialized():
 
 # Simulate the system
 u_online = []
+u_online2 = []
 y_online = []
-r_online = [[0, 6, 0]] * 200 + [[0, 0, -1]] * 200 + [[7, 4, 1]] * 200 + [[0, 7, 2]] * 200
+r_online = [[6, 6, 6]] * 100 + [[2, 3, -1]] * 100  #+ [[7, 4, 1]] * 200 + [[0, 7, 2]] * 200
 for i in range(len(r_online) - r_len):
     r = r_online[i: i + r_len]
     u1 = controller.apply(r)[0]
     u2 = controller.apply_regularized(r)[0]
     u_out = u2
-    u = u_out
     y = system.apply(u_out)
     controller.update(u_out, y)
-    u_online.append(u_out)
+    u_online.append(u1)
+    u_online2.append(u2)
     y_online.append(y)
     r_online.append(r)
 
@@ -180,6 +181,9 @@ fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
 ax1.plot([u[0] for u in u_online], label="input 1", color="green", linestyle=":")
 ax1.plot([u[1] for u in u_online], label="input 2", color="red", linestyle=":")
 ax1.plot([u[2] for u in u_online], label="input 3", color="purple", linestyle=":")
+ax1.plot([u[0] for u in u_online2], label="input b 1", color="black", linestyle="-")
+ax1.plot([u[1] for u in u_online2], label="input b 2", color="black", linestyle="-")
+ax1.plot([u[2] for u in u_online2], label="input b 3", color="black", linestyle="-")
 ax1.set_title('Inputs')
 ax1.legend()
 

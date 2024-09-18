@@ -342,6 +342,8 @@ class Controller:
         self.I_u = np.eye(self.dim_u)
         self.I_y = np.eye(self.dim_y)
 
+        self.Q_bar = np.kron(np.eye(self.target_len), self.Q[:self.output_dims,:self.output_dims])
+        self.R_bar = np.kron(np.eye(self.target_len), self.R[:self.input_dims,:self.input_dims])
 
     def apply_regularized(
         self,
@@ -385,8 +387,8 @@ class Controller:
 
         # Right-hand side
         b = vstack([
-            u_ini,
-            y_ini + sigma_y,
+            u_ini ,
+            y_ini + sigma_y ,
             u,
             y
         ])
@@ -401,14 +403,25 @@ class Controller:
         if y_constraints is not None:
             constraints += y_constraints(y)
 
+
+
+        print("Shape of y:", y.shape)
+        print("Shape of target_cvx:", target_cvx.shape)
+        print("Shape of self.Q_bar:", self.Q_bar.shape)
+        print("Shape of u:", u.shape)
+        print("Shape of self.R_bar:", self.R_bar.shape)
+
+
         # Cost function
-        cost = sum_squares(self.Q @ (y - target_cvx)) + sum_squares(self.R @ u)
+        cost = sum_squares(self.Q_bar @ (y - target_cvx)) + sum_squares(self.R_bar @ u)
         cost += self.lambda_g * norm1(g) + self.lambda_y * norm1(sigma_y)
+        print("cost " , cost)
+        print("constraints:" ,constraints)
 
         # Define and solve the problem
         problem = Problem(Minimize(cost), constraints)
-        problem.solve(solver='OSQP', verbose = True)
-        #problem.solve(solver='SCS')  # or try 'ECOS', 'MOSEK', etc.
+        problem.solve(solver= 'OSQP', verbose = True)
+        #problem.solve(solver='SCS')  # or try  OSQP 'ECOS', 'MOSEK', etc.
 
         # Check if the problem was solved
         if problem.status not in ["optimal", "optimal_inaccurate"]:
@@ -417,6 +430,9 @@ class Controller:
 
         # Extract optimal control input
         u_star = u.value
+
+        print("Optimal control input u_star:", u_star)
+        print("Optimal slack variable sigma_y:", sigma_y.value)
 
         # Reshape to match input dimensions
         u_star = u_star.reshape(-1, self.input_dims)
