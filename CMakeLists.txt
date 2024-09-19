@@ -56,3 +56,15 @@ link_libraries(OpenMP::OpenMP_CXX)
 
 add_subdirectory(src/deepcpp)
 add_subdirectory(tests/deepcpp)
+
+
+install(TARGETS deepcpp_lib
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
+install(DIRECTORY src/deepcpp/
+  DESTINATION include/deepcpp
+  FILES_MATCHING PATTERN "*.h"
+)
