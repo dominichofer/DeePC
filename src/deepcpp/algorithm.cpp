@@ -38,7 +38,7 @@ VectorXd concat(const std::vector<VectorXd>& v)
 {
     int size = v.front().size();
     VectorXd res(v.size() * size);
-    for (int i = 0; i < v.size(); ++i)
+    for (std::size_t i = 0; i < v.size(); ++i)
         res.segment(i * size, size) = v[i];
     return res;
 }
@@ -47,7 +47,7 @@ VectorXd concat(const std::vector<VectorXd>& l, const std::vector<VectorXd>& r)
 {
     assert(l.size() == r.size());
     VectorXd res(l.size() * l.front().size() + r.size() * r.front().size());
-    for (int i = 0; i < l.size(); ++i)
+    for (std::size_t i = 0; i < l.size(); ++i)
     {
         res.segment(i * l.front().size(), l.front().size()) = l[i];
         res.segment(i * r.front().size() + l.size() * l.front().size(), r.front().size()) = r[i];
@@ -89,7 +89,7 @@ MatrixXd HankelMatrix(int rows, const std::vector<VectorXd>& vec)
     MatrixXd res(rows * dims, vec.size() - rows + 1);
     for (int i = 0; i < rows; ++i)
         for (int j = 0; j < dims; ++j)
-            for (int k = 0; k < vec.size() - rows + 1; ++k)
+            for (std::size_t k = 0; k < vec.size() - rows + 1; ++k)
                 res(i * dims + j, k) = vec[k + i](j);
     return res;
 }
