@@ -29,7 +29,11 @@ public:
     // Apply multiple inputs and get multiple outputs
     std::vector<VectorXd> apply_multiple(const std::vector<double>& u);
     virtual std::vector<VectorXd> apply_multiple(const std::vector<VectorXd>& u);
+
+    void printMatrices();
 };
+
+
 
 // Discrete Linear Time Invariant System with random noise
 class RandomNoiseDiscreteLTI : public DiscreteLTI

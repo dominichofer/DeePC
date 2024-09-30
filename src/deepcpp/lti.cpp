@@ -53,13 +53,25 @@ VectorXd DiscreteLTI::apply(double u)
     return apply(VectorXd::Constant(1, u));
 }
 
+#include <iostream>
 VectorXd DiscreteLTI::apply(const VectorXd& u)
 {
     assert(u.size() == B.cols());
     assert(u.size() == D.cols());
 
+    // Debug: Print current state x and input u
+    std::cout << "LTI Apply - Current State x: " << x.transpose() << std::endl;
+    std::cout << "LTI Apply - Input u: " << u.transpose() << std::endl;
+
     x = A * x + B * u;
-    return C * x + D * u;
+    VectorXd y = C * x + D * u;
+
+    // Debug: Print new state x and output y
+    std::cout << "LTI Apply - New State x: " << x.transpose() << std::endl;
+    std::cout << "LTI Apply - Output y: " << y.transpose() << std::endl;
+
+
+    return y;
 }
 
 std::vector<VectorXd> DiscreteLTI::apply_multiple(const std::vector<double>& u)
@@ -78,6 +90,16 @@ std::vector<VectorXd> DiscreteLTI::apply_multiple(const std::vector<VectorXd>& u
     for (const auto& ui : u)
         y.push_back(apply(ui));
     return y;
+}
+
+
+void DiscreteLTI::printMatrices() 
+{
+    std::cout << "Matrix A:\n" << A << "\n";
+    std::cout << "Matrix B:\n" << B << "\n";
+    std::cout << "Matrix C:\n" << C << "\n";
+    std::cout << "Matrix D:\n" << D << "\n";
+    std::cout << "State vector x:\n" << x << "\n";
 }
 
 VectorXd RandomNoiseDiscreteLTI::apply(const VectorXd& u)

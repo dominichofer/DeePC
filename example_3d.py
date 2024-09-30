@@ -181,8 +181,8 @@ r_online = r_online_dynamic#[[6, 5.5, 5]] * 100 + [[5, 4, 3]] * 100 + [[2, 0, -1
 for i in range(len(r_online) - r_len):
     r = r_online[i: i + r_len]
     #print("u ss : ",[r, u_ss])
-    #u = controller.apply(r , [u_ss]* len(r))[0]
-    u = controller.apply_trajectory_tracking_version(r)[0]#u_ss
+    u = controller.apply(r , [u_ss]* len(r))[0]
+    #u = controller.apply_trajectory_tracking_version(r)[0]#u_ss
     y = system.apply(u)
     controller.update(u, y)
     u_online.append(u)
