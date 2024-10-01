@@ -1,7 +1,7 @@
 from typing import Callable
 import numpy as np
 import matplotlib.pyplot as plt
-from .math_deepc import hankel_matrix, projected_gradient_method
+from .math import hankel_matrix, projected_gradient_method
 
 
 def as_column_vector(v: list | np.ndarray) -> np.ndarray:
@@ -223,8 +223,8 @@ def data_quality(
 
     G = M_u.T @ Q @ M_u + R
 
-    print(f"Dominant Dimensions and max drop for U: {dominant_dim_and_find_max_drop(U,"U")}")
-    print(f"Dominant Dimensions and max drop for Y: {dominant_dim_and_find_max_drop(Y,"Y")}")
+    print(f"Dominant Dimensions and max drop for U: {dominant_dim_and_find_max_drop(U, 'U')}")
+    print(f"Dominant Dimensions and max drop for Y: {dominant_dim_and_find_max_drop(Y,'Y')}")
 
     print(f"Shape of U_p: {U_p.shape}")
     print(f"Rank of U_p: {np.linalg.matrix_rank(U_p)}")

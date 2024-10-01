@@ -2,7 +2,7 @@ import collections
 from typing import Callable
 import numpy as np
 from numpy.linalg import matrix_rank, svd
-from .math_deepc import hankel_matrix, projected_gradient_method
+from .math import hankel_matrix, projected_gradient_method
 from .deepc import as_column_vector, check_dimensions
 
 # noise rejection version only

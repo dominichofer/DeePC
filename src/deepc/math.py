@@ -151,3 +151,23 @@ def generate_prbs_with_shift(length, num_channels=1, levels=[0, 10], shift=10, s
         prbs_sequence.append(step)
     
     return prbs_sequence
+
+
+
+
+def linear_chirp(f0: float, f1: float, samples: int, phi: float = 0) -> list[float]:
+    """
+    Generate a linear chirp signal.
+    Args:
+        f0: Start frequency in Hz.
+        f1: End frequency in Hz.
+        samples: Number of samples.
+        phi: Phase offset in radians.
+    """
+    return [
+        sin(
+            phi
+            + 2 * pi * (f0 * (i / (samples - 1)) + 0.5 * (f1 - f0) * (i / (samples - 1)) ** 2)
+        )
+        for i in range(samples)
+    ]
