@@ -5,10 +5,6 @@ from numpy.linalg import matrix_rank, svd
 from .math import hankel_matrix, projected_gradient_method
 from .deepc import as_column_vector, check_dimensions
 
-# noise rejection version only
-from typing import List, Optional
-from cvxpy import Variable, Minimize, Problem, sum_squares, norm1, hstack, vstack, Parameter, Constraint
-    
 
 class Controller:
     def __init__(
@@ -268,7 +264,7 @@ class Controller:
         return u_star.reshape(-1, self.input_dims)
     
     def initialize_regularization(self, lambda_g, lambda_y, rank):
-
+            
         self.lambda_g = lambda_g
         self.lambda_y = lambda_y
         self.rank     = rank
@@ -345,6 +341,9 @@ class Controller:
         self.Q_bar = np.kron(np.eye(self.target_len), self.Q[:self.output_dims,:self.output_dims])
         self.R_bar = np.kron(np.eye(self.target_len), self.R[:self.input_dims,:self.input_dims])
 
+    from typing import List, Optional
+    # noise rejection version only
+    from cvxpy import Variable, Minimize, Problem, sum_squares, norm1, hstack, vstack, Parameter, Constraint
     def apply_regularized(
         self,
         target: List[float],
