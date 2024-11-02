@@ -31,6 +31,9 @@ if (NOT TARGET Eigen3::Eigen)
         set(EIGEN_BUILD_DOC OFF)
         set(EIGEN_BUILD_PKGCONFIG OFF)
         FetchContent_MakeAvailable(Eigen)
+        if(TARGET Eigen::Eigen)
+                set_target_properties(Eigen::Eigen PROPERTIES EXPORT_NAME Eigen3::Eigen)
+        endif()
 endif (NOT TARGET Eigen3::Eigen)
 
 # Google Test
@@ -56,3 +59,4 @@ link_libraries(OpenMP::OpenMP_CXX)
 
 add_subdirectory(src/deepcpp)
 add_subdirectory(tests/deepcpp)
+

@@ -4,7 +4,14 @@ import numpy as np
 class DiscreteLTI:
     "Discrete Linear Time-Invariant System"
 
-    def __init__(self, A: list, B: list, C: list, D: list, x_ini: list) -> None:
+    def __init__(
+        self,
+        A: list | np.ndarray,
+        B: list | np.ndarray,
+        C: list | np.ndarray,
+        D: list | np.ndarray,
+        x_ini: list | np.ndarray,
+    ) -> None:
         """
         A: State matrix
         B: Input matrix
@@ -92,7 +99,15 @@ class DiscreteLTI:
 class RandomNoiseDiscreteLTI(DiscreteLTI):
     "Discrete Linear Time-Invariant System with random noise"
 
-    def __init__(self, A: list, B: list, C: list, D: list, x_ini: list, noise_std: float):
+    def __init__(
+        self,
+        A: list | np.ndarray,
+        B: list | np.ndarray,
+        C: list | np.ndarray,
+        D: list | np.ndarray,
+        x_ini: list | np.ndarray,
+        noise_std: float,
+    ):
         """
         A: State matrix
         B: Input matrix
