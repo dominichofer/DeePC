@@ -5,11 +5,6 @@ from numpy.linalg import matrix_rank, svd
 from .math import hankel_matrix, projected_gradient_method
 from .deepc import as_column_vector, check_dimensions
 
-# noise rejection version only
-from typing import List, Optional
-from cvxpy import Variable, Minimize, Problem, sum_squares, norm1, hstack, vstack, Parameter, Constraint
-    
-
 class Controller:
     def __init__(
         self,
