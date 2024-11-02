@@ -111,7 +111,7 @@ chirp_sequence = generate_chirp_with_shift(length, num_channels, f0, f1, shift, 
 
 
 
-u_d = chirp_sequence #    prbs_sequence # chirp_sequence # 
+u_d = prbs_sequence# chirp_sequence #    prbs_sequence # chirp_sequence # 
 
 # Apply it to the system
 y_d = system.apply_multiple(u_d)
