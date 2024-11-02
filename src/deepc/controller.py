@@ -87,8 +87,10 @@ class Controller:
         Y_p = Y[: T_ini * self.output_dims, :]  # past
         Y_f = Y[T_ini * self.output_dims :, :]  # future
 
-        self.suggest_dimensions(U_p, U_f, Y_p, Y_f)
-
+        self.assess_matrix_quality(U_p, "U_p")
+        self.assess_matrix_quality(U_f, "U_f")
+        self.assess_matrix_quality(Y_p, "Y_p")
+        self.assess_matrix_quality(Y_f, "Y_f")
         # Now solving
         # minimize: ||y - r||_Q^2 + ||u||_R^2
         # subject to: [U_p; Y_p; U_f; Y_f] * g = [u_ini; y_ini; u; y]
@@ -182,46 +184,20 @@ class Controller:
         return u_star.reshape(-1, self.input_dims)
     
 
-    def assess_matrix_quality(self,matrix):
-        """ Assess the quality of the matrix using rank, condition number, and singular values. """
+    def assess_matrix_quality(self, matrix, name="Matrix", energy_threshold=0.95):
+        """Assess the quality of the matrix using rank, condition number, and singular values."""
+        # Calculate metrics
         rank = matrix_rank(matrix)
         _, s, _ = svd(matrix)
         cond_number = np.linalg.cond(matrix)
         energy_retained = np.cumsum(s**2) / np.sum(s**2)
         
+        suggested_dims = np.searchsorted(energy_retained, energy_threshold) + 1
+
+        # Print results
+        print(f"Assessment of {name}:")
+        print(f"Dimensions: {matrix.shape}")
+        print(f"Rank: {rank}, Condition Number: {cond_number}")
+        print(f"Suggested dimensions for retaining {energy_threshold*100}% energy: {suggested_dims}")
+        
         return rank, cond_number, s, energy_retained
-
-
-    def suggest_dimensions(self,U_p, U_f, Y_p, Y_f, energy_threshold=0.99):
-        """ Suggest optimal dimensions based on the energy retained in the principal components. """
-        # Assess U_p and U_f
-        rank_U_p, cond_U_p, s_U_p, energy_U_p = self.assess_matrix_quality(U_p)
-        rank_U_f, cond_U_f, s_U_f, energy_U_f = self.assess_matrix_quality(U_f)
-        
-        # Assess Y_p and Y_f
-        rank_Y_p, cond_Y_p, s_Y_p, energy_Y_p = self.assess_matrix_quality(Y_p)
-        rank_Y_f, cond_Y_f, s_Y_f, energy_Y_f = self.assess_matrix_quality(Y_f)
-        
-        # Suggest number of dimensions to retain
-        suggested_dims_U = np.searchsorted(energy_U_p, energy_threshold) + 1
-        suggested_dims_Y = np.searchsorted(energy_Y_p, energy_threshold) + 1
-        
-        print("Assessment of U_p:")
-        print(f"Dimensions: {U_p.shape}")
-        print(f"Rank: {rank_U_p}, Condition Number: {cond_U_p}")
-        print(f"Suggested dimensions (U): {suggested_dims_U} (retaining {energy_threshold*100}% energy)")
-        
-        print("Assessment of U_f:")
-        print(f"Dimensions: {U_f.shape}")
-        print(f"Rank: {rank_U_f}, Condition Number: {cond_U_f}")
-        
-        print("Assessment of Y_p:")
-        print(f"Dimensions: {Y_p.shape}")
-        print(f"Rank: {rank_Y_p}, Condition Number: {cond_Y_p}")
-        print(f"Suggested dimensions (Y): {suggested_dims_Y} (retaining {energy_threshold*100}% energy)")
-        
-        print("Assessment of Y_f:")
-        print(f"Dimensions: {Y_f.shape}")
-        print(f"Rank: {rank_Y_f}, Condition Number: {cond_Y_f}")
-        
-        return suggested_dims_U, suggested_dims_Y
