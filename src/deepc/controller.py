@@ -82,10 +82,10 @@ class Controller:
         Y_p = Y[: T_ini * self.output_dims, :]  # past
         Y_f = Y[T_ini * self.output_dims :, :]  # future
 
-        self.assess_matrix_quality(U_p, "U_p")
-        self.assess_matrix_quality(U_f, "U_f")
-        self.assess_matrix_quality(Y_p, "Y_p")
-        self.assess_matrix_quality(Y_f, "Y_f")
+        self.assess_matrix_quality_ratio(U_p, "U_p")
+        self.assess_matrix_quality_ratio(U_f, "U_f")
+        self.assess_matrix_quality_ratio(Y_p, "Y_p")
+        self.assess_matrix_quality_ratio(Y_f, "Y_f")
         # Now solving
         # minimize: ||y - r||_Q^2 + ||u||_R^2
         # subject to: [U_p; Y_p; U_f; Y_f] * g = [u_ini; y_ini; u; y]
@@ -179,8 +179,8 @@ class Controller:
         return u_star.reshape(-1, self.input_dims)
     
 
-    def assess_matrix_quality(self, matrix, name="Matrix", energy_threshold=0.95):
-        """Assess the quality of the matrix using rank, condition number, and singular values."""
+    def assess_matrix_quality_energy(self, matrix, name="Matrix", energy_threshold=0.90):
+        """Assess the quality of the matrix using rank, condition number, and singular values energy."""
         # Calculate metrics
         rank = matrix_rank(matrix)
         _, s, _ = svd(matrix)
@@ -196,3 +196,27 @@ class Controller:
         print(f"Suggested dimensions for retaining {energy_threshold*100}% energy: {suggested_dims}")
         
         return rank, cond_number, s, energy_retained
+    
+    def assess_matrix_quality_ratio(self, matrix, name="Matrix", dominance_threshold=0.90):
+        """Assess the quality of the matrix using rank, condition number, and singular value dominance."""
+        # Calculate metrics
+        rank = matrix_rank(matrix)
+        _, s, _ = svd(matrix)
+        cond_number = np.linalg.cond(matrix)
+
+        # Calculate dominance of largest singular values
+        total_singular_value_sum = np.sum(s)
+        main_dominance_ratio = s[0] / total_singular_value_sum  # Ratio of largest singular value to the sum of all
+
+        # Determine the number of dominant singular values needed to reach the threshold
+        cumulative_dominance = np.cumsum(s) / total_singular_value_sum
+        suggested_dims = np.searchsorted(cumulative_dominance, dominance_threshold) + 1
+
+        # Print results
+        print(f"Assessment of {name}:")
+        print(f"Dimensions: {matrix.shape}")
+        print(f"Rank: {rank}, Condition Number: {cond_number}")
+        print(f"Largest singular value dominance ratio: {main_dominance_ratio:.2f}")
+        print(f"Suggested dimensions for reaching {dominance_threshold*100}% dominance: {suggested_dims}")
+        
+        return rank, cond_number, s, main_dominance_ratio, cumulative_dominance
