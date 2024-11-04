@@ -10,7 +10,7 @@ This repository provides a Python package and a C++ library, which both implemen
 The Python package requires at least Python 3.10 and pip.<br>
 It depends on numpy, which it installs automatically through pip.
 ### C++
-The C++ library requires a C++ compiler, cmake, and make.<br>
+The C++ library requires a C++ compiler, [cmake](https://cmake.org/), and [make](https://www.gnu.org/software/make/).<br>
 It depends on Eigen, Google Test, and Google Benchmark; which it installs automatically through cmake.
 
 ## Installation
