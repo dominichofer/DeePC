@@ -5,7 +5,6 @@ from numpy.linalg import matrix_rank, svd
 from .math import hankel_matrix, projected_gradient_method
 from .deepc import as_column_vector, check_dimensions
 
-
 class Controller:
     def __init__(
         self,
@@ -83,8 +82,10 @@ class Controller:
         Y_p = Y[: T_ini * self.output_dims, :]  # past
         Y_f = Y[T_ini * self.output_dims :, :]  # future
 
-        self.suggest_dimensions(U_p, U_f, Y_p, Y_f)
-
+        self.assess_matrix_quality_ratio(U_p, "U_p")
+        self.assess_matrix_quality_ratio(U_f, "U_f")
+        self.assess_matrix_quality_ratio(Y_p, "Y_p")
+        self.assess_matrix_quality_ratio(Y_f, "Y_f")
         # Now solving
         # minimize: ||y - r||_Q^2 + ||u||_R^2
         # subject to: [U_p; Y_p; U_f; Y_f] * g = [u_ini; y_ini; u; y]
@@ -178,306 +179,44 @@ class Controller:
         return u_star.reshape(-1, self.input_dims)
     
 
-
-
-
-    def apply_trajectory_tracking_version(
-        self, target: list | None = None
-    ) -> list[float] | None:
-        from scipy.linalg import solve
-        #u_0 = np.zeros((self.target_len, self.input_dims))
-        #u_0 = np.concatenate(u_0).reshape(-1, 1)
-        """
-        Returns the optimal control for a given reference trajectory
-        Args:
-            target: Target system outputs, optimal control tries to reach.
-            u_bar: Computes u_bar from the system
-        """
-        if not self.is_initialized():
-            return None
-
-        target = as_column_vector(target)
-        check_dimensions(target, "target", self.target_len, self.output_dims)
-
-        ''' get the u_ref by solving target = M_x ⋅x + M_u⋅u_bar 
-        where:
-
-        - target is the desired future output trajectory.
-        - x is the vector of initial conditions (past inputs and outputs).
-        - u_bar is the steady state input sequence we aim to compute.
-        '''
-
-        # Compute effective T_ini based on target length (for r smaller T_ini error)
-        # effective_T_ini = min(self.T_ini, len(target) // self.output_dims) todo, still not working
-
-        M_x_uini = self.M_x[:,:self.T_ini*self.input_dims]
-        M_x_yini = self.M_x[:,self.T_ini*self.input_dims:]
-        M_x_uini_extended = np.zeros_like(self.M_u)
-
-        target = np.concatenate(target).reshape(-1, 1)
-
-        # problem here if r is smaller than T_ini (see solution above)
-        M_x_uini_extended[:,:M_x_uini.shape[1]] = M_x_uini
-
-        u_bar = solve(M_x_uini_extended + self.M_u, target - M_x_yini@target[:self.T_ini*self.input_dims])
-        
-        '''
-        LHS: Represents the total influence of the inputs (both initial and future) on the future outputs.
-        RHS: target_subset = target[:self.T_ini * self.input_dims]: This is the subset of the target trajectory corresponding to the initial outputs.
-             M_x_yini @ target_subset: Calculates the influence of the initial outputs on the future outputs.
-             target - M_x_yini @ target_subset: Represents the desired future outputs after subtracting the effect of the initial outputs.
-        '''
-
-        # Flatten
-        u_ini = np.concatenate(self.u_ini).reshape(-1, 1)
-        y_ini = np.concatenate(self.y_ini).reshape(-1, 1)
-        u_bar = np.concatenate(u_bar).reshape(-1, 1)
-        x     = np.concatenate([u_ini, y_ini]).reshape(-1, 1)
-
-        # verification of u_bar
-        should_be_target = self.M_x @ x + self.M_u @ u_bar
-
-        if not np.allclose(should_be_target, target, rtol = 0.2): # seems to be a good boundery. interesting things happen at ref change
-            print('u_bar computation off')
-            print('computed ss target ', should_be_target.tolist())
-            print('given       target ', target.tolist())
-            u_0 = np.zeros_like(u_bar)
-        else:
-            print('u_bar computation verified successfully')
-            u_0 = u_bar
-        # ---------------------------------------------------------------------------
-
-        w = self.M_u.T @ self.Q @ (target - self.M_x @ x) + self.R @ u_0
-
-        u_star = np.linalg.lstsq(self.G, w, rcond= None)[0]
-
-        if self.input_constrain_fkt is not None:
-            u_star = projected_gradient_method(
-                self.G,
-                u_star,
-                w,
-                self.input_constrain_fkt,
-                self.max_pgm_iterations,
-                self.pgm_tolerance,
-            )
-
-        return u_star.reshape(-1, self.input_dims)
-    
-    def initialize_regularization(self, lambda_g, lambda_y, rank):
-            
-        self.lambda_g = lambda_g
-        self.lambda_y = lambda_y
-        self.rank     = rank
-
-        # Create Hankel matrices
-        U = hankel_matrix(self.T_ini + self.target_len, self.u_d)
-        U_p = U[: self.T_ini * self.input_dims, :]  # past inputs
-        U_f = U[self.T_ini * self.input_dims :, :]  # future inputs
-        Y = hankel_matrix(self.T_ini + self.target_len, self.y_d)
-        Y_p = Y[: self.T_ini * self.output_dims, :]  # past outputs
-        Y_f = Y[self.T_ini * self.output_dims :, :]  # future outputs
-
-        # Low-rank approximation
-        if self.rank is not None:
-            rank = self.rank
-            # Concatenate data matrices
-            Data = np.vstack([U_p, Y_p, U_f, Y_f])
-            print(f"Original Data shape: {Data.shape}")
-            print(f"Original U_p shape: {U_p.shape}")
-            print(f"Original Y_p shape: {Y_p.shape}")
-            print(f"Original U_f shape: {U_f.shape}")
-            print(f"Original Y_f shape: {Y_f.shape}")     
-
-            # Perform SVD
-            U_svd, S_svd, Vh_svd = svd(Data, full_matrices=False)
-            print(f"U_svd shape: {U_svd.shape}")
-            print(f"S_svd shape: {S_svd.shape}")
-            print(f"Vh_svd shape: {Vh_svd.shape}")
-
-            # Truncate to the specified rank
-            U_svd_truncated = U_svd[:, :rank]
-            S_svd_truncated = S_svd[:rank]
-            Vh_svd_truncated = Vh_svd[:rank, :]
-            print(f"Truncated U_svd shape: {U_svd_truncated.shape}")
-            print(f"Truncated S_svd shape: {S_svd_truncated.shape}")
-            print(f"Truncated Vh_svd shape: {Vh_svd_truncated.shape}")
-
-            # Reconstruct the data matrices
-            Data_approx = U_svd_truncated @ np.diag(S_svd_truncated) @ Vh_svd_truncated
-            print(f"Approximated Data shape: {Data_approx.shape}")
-
-            # Split the approximated data matrices
-            split_idx1 = U_p.shape[0]
-            split_idx2 = split_idx1 + Y_p.shape[0]
-            split_idx3 = split_idx2 + U_f.shape[0]
-
-            U_p = Data_approx[:split_idx1, :]
-            Y_p = Data_approx[split_idx1:split_idx2, :]
-            U_f = Data_approx[split_idx2:split_idx3, :]
-            Y_f = Data_approx[split_idx3:, :]
-
-            # Print the final shapes
-            print(f"Final U_p shape: {U_p.shape}")
-            print(f"Final Y_p shape: {Y_p.shape}")
-            print(f"Final U_f shape: {U_f.shape}")
-            print(f"Final Y_f shape: {Y_f.shape}")                                                                                  
-
-        # Store the data matrices
-        self.U_p = U_p
-        self.Y_p = Y_p
-        self.U_f = U_f
-        self.Y_f = Y_f
-
-        # For convenience, precompute some dimensions
-        self.dim_g = U_p.shape[1]
-        self.dim_u = self.input_dims * self.target_len
-        self.dim_y = self.output_dims * self.target_len
-        self.dim_sigma_y = self.output_dims * self.T_ini
-
-        # Identity matrices
-        self.I_u = np.eye(self.dim_u)
-        self.I_y = np.eye(self.dim_y)
-
-        self.Q_bar = np.kron(np.eye(self.target_len), self.Q[:self.output_dims,:self.output_dims])
-        self.R_bar = np.kron(np.eye(self.target_len), self.R[:self.input_dims,:self.input_dims])
-
-    from typing import List, Optional
-    # noise rejection version only
-    from cvxpy import Variable, Minimize, Problem, sum_squares, norm1, hstack, vstack, Parameter, Constraint
-    def apply_regularized(
-        self,
-        target: List[float],
-        u_constraints: Optional[Callable[[Variable], List[Constraint]]] = None,
-        y_constraints: Optional[Callable[[Variable], List[Constraint]]] = None,
-    ) -> Optional[np.ndarray]:
-        """
-        Returns the optimal control for a given reference trajectory
-        using the regularized DeePC algorithm.
-        Args:
-            target: Target system outputs, optimal control tries to reach.
-            u_constraints: Function to apply input constraints.
-            y_constraints: Function to apply output constraints.
-        """
-        if not self.is_initialized():
-            return None
-
-        # Convert target to column vector
-        target = np.concatenate(target).reshape(-1, 1)
-        check_dimensions(target, "target", self.dim_y, 1)
-
-        target_cvx = Parameter((self.dim_y, 1), value=target)
-
-        # Flatten initial inputs and outputs
-        u_ini = np.concatenate(self.u_ini).reshape(-1, 1)
-        y_ini = np.concatenate(self.y_ini).reshape(-1, 1)
-
-        g = Variable((self.dim_g, 1))
-        u = Variable((self.dim_u, 1))
-        y = Variable((self.dim_y, 1))
-        sigma_y = Variable((self.dim_sigma_y, 1))
-
-        # Constraint matrices
-        A = vstack([
-            self.U_p,
-            self.Y_p,
-            self.U_f,
-            self.Y_f
-        ])
-
-        # Right-hand side
-        b = vstack([
-            u_ini ,
-            y_ini + sigma_y ,
-            u,
-            y
-        ])
-
-        # Formulate the constraints
-        constraints = [A @ g == b]
-
-        # Add input and output constraints if provided
-        if u_constraints is not None:
-            constraints += u_constraints(u)
-
-        if y_constraints is not None:
-            constraints += y_constraints(y)
-
-
-
-        print("Shape of y:", y.shape)
-        print("Shape of target_cvx:", target_cvx.shape)
-        print("Shape of self.Q_bar:", self.Q_bar.shape)
-        print("Shape of u:", u.shape)
-        print("Shape of self.R_bar:", self.R_bar.shape)
-
-
-        # Cost function
-        cost = sum_squares(self.Q_bar @ (y - target_cvx)) + sum_squares(self.R_bar @ u)
-        cost += self.lambda_g * norm1(g) + self.lambda_y * norm1(sigma_y)
-        print("cost " , cost)
-        print("constraints:" ,constraints)
-
-        # Define and solve the problem
-        problem = Problem(Minimize(cost), constraints)
-        problem.solve(solver= 'OSQP', verbose = True)
-        #problem.solve(solver='SCS')  # or try  OSQP 'ECOS', 'MOSEK', etc.
-
-        # Check if the problem was solved
-        if problem.status not in ["optimal", "optimal_inaccurate"]:
-            print("Problem not solved to optimality.")
-            return None
-
-        # Extract optimal control input
-        u_star = u.value
-
-        print("Optimal control input u_star:", u_star)
-        print("Optimal slack variable sigma_y:", sigma_y.value)
-
-        # Reshape to match input dimensions
-        u_star = u_star.reshape(-1, self.input_dims)
-
-        return u_star
-
-    def assess_matrix_quality(self,matrix):
-        """ Assess the quality of the matrix using rank, condition number, and singular values. """
+    def assess_matrix_quality_energy(self, matrix, name="Matrix", energy_threshold=0.90):
+        """Assess the quality of the matrix using rank, condition number, and singular values energy."""
+        # Calculate metrics
         rank = matrix_rank(matrix)
         _, s, _ = svd(matrix)
         cond_number = np.linalg.cond(matrix)
         energy_retained = np.cumsum(s**2) / np.sum(s**2)
         
+        suggested_dims = np.searchsorted(energy_retained, energy_threshold) + 1
+
+        # Print results
+        print(f"Assessment of {name}:")
+        print(f"Dimensions: {matrix.shape}")
+        print(f"Rank: {rank}, Condition Number: {cond_number}")
+        print(f"Suggested dimensions for retaining {energy_threshold*100}% energy: {suggested_dims}")
+        
         return rank, cond_number, s, energy_retained
+    
+    def assess_matrix_quality_ratio(self, matrix, name="Matrix", dominance_threshold=0.90):
+        """Assess the quality of the matrix using rank, condition number, and singular value dominance."""
+        # Calculate metrics
+        rank = matrix_rank(matrix)
+        _, s, _ = svd(matrix)
+        cond_number = np.linalg.cond(matrix)
 
+        # Calculate dominance of largest singular values
+        total_singular_value_sum = np.sum(s)
+        main_dominance_ratio = s[0] / total_singular_value_sum  # Ratio of largest singular value to the sum of all
 
-    def suggest_dimensions(self,U_p, U_f, Y_p, Y_f, energy_threshold=0.99):
-        """ Suggest optimal dimensions based on the energy retained in the principal components. """
-        # Assess U_p and U_f
-        rank_U_p, cond_U_p, s_U_p, energy_U_p = self.assess_matrix_quality(U_p)
-        rank_U_f, cond_U_f, s_U_f, energy_U_f = self.assess_matrix_quality(U_f)
+        # Determine the number of dominant singular values needed to reach the threshold
+        cumulative_dominance = np.cumsum(s) / total_singular_value_sum
+        suggested_dims = np.searchsorted(cumulative_dominance, dominance_threshold) + 1
+
+        # Print results
+        print(f"Assessment of {name}:")
+        print(f"Dimensions: {matrix.shape}")
+        print(f"Rank: {rank}, Condition Number: {cond_number}")
+        print(f"Largest singular value dominance ratio: {main_dominance_ratio:.2f}")
+        print(f"Suggested dimensions for reaching {dominance_threshold*100}% dominance: {suggested_dims}")
         
-        # Assess Y_p and Y_f
-        rank_Y_p, cond_Y_p, s_Y_p, energy_Y_p = self.assess_matrix_quality(Y_p)
-        rank_Y_f, cond_Y_f, s_Y_f, energy_Y_f = self.assess_matrix_quality(Y_f)
-        
-        # Suggest number of dimensions to retain
-        suggested_dims_U = np.searchsorted(energy_U_p, energy_threshold) + 1
-        suggested_dims_Y = np.searchsorted(energy_Y_p, energy_threshold) + 1
-        
-        print("Assessment of U_p:")
-        print(f"Dimensions: {U_p.shape}")
-        print(f"Rank: {rank_U_p}, Condition Number: {cond_U_p}")
-        print(f"Suggested dimensions (U): {suggested_dims_U} (retaining {energy_threshold*100}% energy)")
-        
-        print("Assessment of U_f:")
-        print(f"Dimensions: {U_f.shape}")
-        print(f"Rank: {rank_U_f}, Condition Number: {cond_U_f}")
-        
-        print("Assessment of Y_p:")
-        print(f"Dimensions: {Y_p.shape}")
-        print(f"Rank: {rank_Y_p}, Condition Number: {cond_Y_p}")
-        print(f"Suggested dimensions (Y): {suggested_dims_Y} (retaining {energy_threshold*100}% energy)")
-        
-        print("Assessment of Y_f:")
-        print(f"Dimensions: {Y_f.shape}")
-        print(f"Rank: {rank_Y_f}, Condition Number: {cond_Y_f}")
-        
-        return suggested_dims_U, suggested_dims_Y
+        return rank, cond_number, s, main_dominance_ratio, cumulative_dominance
