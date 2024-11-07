@@ -28,6 +28,8 @@ make -C build
 ```
 To run the provided tests, execute `make -C build test`.<br>
 (The GitHub actions run them on every commit.)
+To install the library, execute `make -C build install`.<br>
+To list more options of make, see `make --help`.<br>
 
 ## Usage
 The DeePC algorithm calculates the optimal control for a given system and a target.<br>
