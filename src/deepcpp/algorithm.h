@@ -9,7 +9,8 @@ using Eigen::VectorXd;
 
 std::string to_string(const std::vector<VectorXd>&);
 
-VectorXd clamp(VectorXd, double min, double max);
+VectorXd clamp(VectorXd value, double low, double high);
+VectorXd clamp(VectorXd value, const VectorXd& low, const VectorXd& high);
 
 VectorXd concat(const VectorXd&, const VectorXd&);
 VectorXd concat(const std::vector<VectorXd>&);
