@@ -20,11 +20,20 @@ std::string to_string(const std::vector<VectorXd>& v)
     return s;
 }
 
-VectorXd clamp(VectorXd v, double min, double max)
+VectorXd clamp(VectorXd value, double low, double high)
 {
-    for (int i = 0; i < v.size(); ++i)
-        v(i) = std::clamp(v(i), min, max);
-    return v;
+    for (int i = 0; i < value.size(); ++i)
+        value(i) = std::clamp(value(i), low, high);
+    return value;
+}
+
+VectorXd clamp(VectorXd value, const VectorXd& low, const VectorXd& high)
+{
+    assert(value.size() == low.size());
+    assert(value.size() == high.size());
+    for (int i = 0; i < value.size(); ++i)
+        value(i) = std::clamp(value(i), low(i), high(i));
+    return value;
 }
 
 VectorXd concat(const VectorXd& l, const VectorXd& r)
