@@ -56,6 +56,6 @@ The resulting `u` is the optimal control to reach the target `r` in the context 
 
 ### Python
 The Python package provides two implementations of this, the stand-alone algorithm `deePC` and a controller.<br>
-For reference applications of the controller see `example_1d.ipynb` and `example_3d.ipynb`.
+For reference applications of the controller see `examples/python_*.ipynb`.
 ### C++
 The C++ library provides two implementations of this, the stand-alone algorithm `deePC` and a controller.<br>
