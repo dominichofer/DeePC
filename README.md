@@ -59,3 +59,4 @@ The Python package provides two implementations of this, the stand-alone algorit
 For reference applications of the controller see `examples/python_*.ipynb`.
 ### C++
 The C++ library provides two implementations of this, the stand-alone algorithm `deePC` and a controller.<br>
+For reference applications of the controller see `examples/cpp_*.cpp`.
