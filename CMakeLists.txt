@@ -56,3 +56,4 @@ link_libraries(OpenMP::OpenMP_CXX)
 
 add_subdirectory(src/deepcpp)
 add_subdirectory(tests/deepcpp)
+add_subdirectory(examples)

@@ -19,3 +19,5 @@ jobs:
       run: make -C build -j$(nproc)
     - name: run tests
       run: ./build/tests/deepcpp/DeePCppTest
+    - name: run examples
+      run: ./build/examples/cpp_1d
