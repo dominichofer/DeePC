@@ -19,9 +19,10 @@ class Controller
     double pgm_tolerance;
     int input_dims;
     int output_dims;
-    MatrixXd M_x, M_u, G;
+    MatrixXd M_x, M_u;
 
 public:
+    MatrixXd G;
     // Optimal controller for a given system and target system outputs.
     // According to the paper Data-Enabled Predictive Control: In the Shallows of the DeePC
     // https://arxiv.org/abs/1811.05890
