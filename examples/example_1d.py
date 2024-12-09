@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from deepc import Controller, DiscreteLTI, data_quality, generate_chirp_with_shift
+from deepc import Controller, DiscreteLTI, generate_chirp_with_shift
 
 # Define a system
 system = DiscreteLTI(
@@ -8,7 +8,7 @@ system = DiscreteLTI(
     B=[[0.00244], [0.0]],
     C=[[1, 0]],
     D=[[0]],
-    x_ini=[1, 1],
+    x_ini=[0.1, 0.1],
 )
 
 min_input = 0
@@ -18,7 +18,7 @@ levels = [min_input, max_input]
 length = 400
 num_channels = 1
 f0 = 1  # Start frequency in Hz
-f1 = 100.0  # End frequency in Hz
+f1 = 10.0  # End frequency in Hz
 shift = 0
 samples_n = 200
 phi = 0.0  # Initial phase
@@ -31,15 +31,14 @@ y_d = system.apply_multiple(u_d)
 
 # Define how many steps the controller should look back
 # to grasp the current state of the system
-T_ini = 10
+T_ini = 30
 
 # Define how many steps the controller should look forward
 r_len = 10 # bigger or equal to T_ini. (might be able to change this)
 
-data_quality(u_d, y_d, T_ini, r_len, 1.0, 0.001)
 
 # Define the controller
-controller = Controller(u_d, y_d, T_ini, r_len, 1.0,0.1, input_constrain_fkt=lambda u: np.clip(u, 0, 100))
+controller = Controller(u_d, y_d, T_ini, r_len, 10.0,0.1, input_constrain_fkt=lambda u: np.clip(u, 0, 100))
 
 # Reset the system
 # to sepereate the offline data from the online data
@@ -54,11 +53,10 @@ while not controller.is_initialized():
 # Simulate the system
 u_online = []
 y_online = []
-r_online = [[0]] * 20 + [[10]] * 100 + [[7]] * 100 + [[40]] * 100
+r_online = [[0]] * 40 + [[10]] * 200 + [[7]] * 200 + [[40]] * 200
 for i in range(len(r_online) - r_len):
     r = r_online[i: i + r_len]
     u = controller.apply(r)[0]
-    #u = controller.apply_trajectory_tracking_version(r)[0]
     y = system.apply(u)
     controller.update(u, y)
     u_online.append(u)

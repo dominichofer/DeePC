@@ -1,7 +1,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from deepc import Controller, RandomNoisyLTI
+from deepc import Controller, RandomNoiseDiscreteLTI
 
 from scipy.signal import max_len_seq
 
@@ -47,7 +47,7 @@ samples_n = 6
 prbs_sequence = generate_prbs_with_shift(length, num_channels, levels, shift, samples_n)
 
 # Define a system
-system = RandomNoisyLTI(
+system = RandomNoiseDiscreteLTI(
     A=[[0.8, 0.0, 0.02], 
        [0.03, 0.84, 0.1], 
        [0.0, 0.02, 0.81]],
@@ -120,7 +120,7 @@ r_len = 1
 
 # Define the controller
 constraint = lambda u: np.clip(u, min_input, max_input)
-controller = Controller(u_d, y_d, T_ini, r_len,R= np.eye((r_len*3))*0.01, control_constrain_fkt=constraint )
+controller = Controller(u_d, y_d, T_ini, r_len,R= np.eye((r_len*3))*0.01, input_constrain_fkt=constraint )
 
 # Reset the system
 # to sepereate the offline data from the online data
@@ -142,8 +142,8 @@ y_online = []
 r_online = [[0, 5, 0]] * 200 + [[0, 0, 5]] * 200 + [[5, 4, 3]] * 200 + [[0, 7, 2]] * 200
 for i in range(len(r_online) - r_len):
     r = r_online[i: i + r_len]
-    u = controller.apply(r, u_ss)[0]
-    y = system.apply(u)#
+    u = controller.apply(r, [u_ss])[0]
+    y = system.apply(u)
     controller.update(u, y)
     u_online.append(u)
     y_online.append(y)

@@ -1,7 +1,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from deepc import Controller, RandomNoiseDiscreteLTI, data_quality, generate_chirp_with_shift, generate_prbs_with_shift
+from deepc import Controller, RandomNoiseDiscreteLTI, generate_chirp_with_shift, generate_prbs_with_shift
 
 from scipy.signal import max_len_seq
 
@@ -107,7 +107,7 @@ print("Data size:", np.shape(u_d))
 T_ini = 5
 r_len = 5
 
-data_quality(u_d, y_d, T_ini, r_len)
+#data_quality(u_d, y_d, T_ini, r_len)
 
 
 
