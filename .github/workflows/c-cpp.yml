@@ -14,8 +14,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: cmake
-      run: cmake -B build
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
     - name: make
       run: make -C build -j$(nproc)
     - name: run tests
       run: ./build/tests/deepcpp/DeePCppTest
+    - name: run examples
+      run: ./build/examples/cpp_1d
