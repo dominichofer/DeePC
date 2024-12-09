@@ -1,7 +1,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from deepc import Controller, RandomNoiseDiscreteLTI, generate_prbs_with_shift, data_quality, generate_chirp_with_shift
+from deepc import Controller, RandomNoiseDiscreteLTI, generate_prbs_with_shift, generate_chirp_with_shift
 
 max_input = 7
 min_input = -5.0
@@ -127,8 +127,6 @@ T_ini = 10
 
 # Define how many steps the controller should look forward
 r_len = 10
-
-data_quality(u_d, y_d, T_ini, r_len, 1 , 0.01)
 
 
 plt.figure(figsize=(12, 8))

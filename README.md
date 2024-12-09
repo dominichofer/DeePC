@@ -10,7 +10,7 @@ This repository provides a Python package and a C++ library, which both implemen
 The Python package requires at least Python 3.10 and pip.<br>
 It depends on numpy, which it installs automatically through pip.
 ### C++
-The C++ library requires a C++ compiler, cmake, and make.<br>
+The C++ library requires a C++ compiler, [cmake](https://cmake.org/), and [make](https://www.gnu.org/software/make/).<br>
 It depends on Eigen, Google Test, and Google Benchmark; which it installs automatically through cmake.
 
 ## Installation
@@ -27,7 +27,9 @@ cmake -B build
 make -C build
 ```
 To run the provided tests, execute `make -C build test`.<br>
-(The GitHub actions run them on every commit.)
+(The GitHub actions run them on every commit.)<br>
+To install the library, execute `make -C build install`.<br>
+To list more options of make, see `make --help`.<br>
 
 ## Usage
 The DeePC algorithm calculates the optimal control for a given system and a target.<br>

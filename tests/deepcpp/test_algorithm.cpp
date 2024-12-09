@@ -9,13 +9,22 @@ TEST(Algorithm, To_String)
 {
 	auto v = Vectors({1, 2}, {3, 4});
 	auto res = to_string(v);
-
 	EXPECT_EQ(res, "[[1.000000, 2.000000][3.000000, 4.000000]]");
 }
 
-TEST(Algorithm, Clamp)
+TEST(Algorithm, Clamp1)
 {
 	auto v = Vector(1, 2, 3, 4);
+	auto res = clamp(v, 2, 3);
+	EXPECT_EQ(res, Vector(2, 2, 3, 3));
+}
+
+TEST(Algorithm, Clamp2)
+{
+	auto v = Vector(1, 2, 3, 4);
+	auto low = Vector(2, 2, 2, 2);
+	auto high = Vector(3, 3, 3, 3);
+	
 	auto res = clamp(v, 2, 3);
 
 	EXPECT_EQ(res, Vector(2, 2, 3, 3));
