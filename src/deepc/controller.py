@@ -1,9 +1,9 @@
 import collections
 from typing import Callable
 import numpy as np
+from numpy.linalg import matrix_rank, svd
 from .math import hankel_matrix, projected_gradient_method
 from .deepc import as_column_vector, check_dimensions
-
 
 class Controller:
     def __init__(
@@ -48,6 +48,9 @@ class Controller:
         check_dimensions(u_d, "u_d", offline_len, self.input_dims)
         check_dimensions(y_d, "y_d", offline_len, self.output_dims)
 
+        self.u_d = u_d
+        self.y_d = y_d
+
         Q_size = target_len * self.output_dims
         if isinstance(Q, (int, float)):
             Q = np.eye(Q_size) * Q
@@ -79,6 +82,10 @@ class Controller:
         Y_p = Y[: T_ini * self.output_dims, :]  # past
         Y_f = Y[T_ini * self.output_dims :, :]  # future
 
+        self.assess_matrix_quality_ratio(U_p, "U_p")
+        self.assess_matrix_quality_ratio(U_f, "U_f")
+        self.assess_matrix_quality_ratio(Y_p, "Y_p")
+        self.assess_matrix_quality_ratio(Y_f, "Y_f")
         # Now solving
         # minimize: ||y - r||_Q^2 + ||u||_R^2
         # subject to: [U_p; Y_p; U_f; Y_f] * g = [u_ini; y_ini; u; y]
@@ -128,9 +135,7 @@ class Controller:
         self.u_ini.clear()
         self.y_ini.clear()
 
-    def apply(
-        self, target: list | np.ndarray, u_0: list | np.ndarray | None = None
-    ) -> list[float] | None:
+    def apply(self, target: list | np.ndarray, u_0: list | np.ndarray | None = None) -> list[float] | None:
         """
         Returns the optimal control for a given reference trajectory
         or None if the controller is not initialized.
@@ -159,7 +164,7 @@ class Controller:
         x = np.concatenate([u_ini, y_ini]).reshape(-1, 1)
         w = self.M_u.T @ self.Q @ (target - self.M_x @ x) + self.R @ u_0
 
-        u_star = np.linalg.lstsq(self.G, w)[0]
+        u_star = np.linalg.lstsq(self.G, w, rcond=None)[0]
 
         if self.input_constrain_fkt is not None:
             u_star = projected_gradient_method(
@@ -172,3 +177,46 @@ class Controller:
             )
 
         return u_star.reshape(-1, self.input_dims)
+    
+
+    def assess_matrix_quality_energy(self, matrix, name="Matrix", energy_threshold=0.90):
+        """Assess the quality of the matrix using rank, condition number, and singular values energy."""
+        # Calculate metrics
+        rank = matrix_rank(matrix)
+        _, s, _ = svd(matrix)
+        cond_number = np.linalg.cond(matrix)
+        energy_retained = np.cumsum(s**2) / np.sum(s**2)
+        
+        suggested_dims = np.searchsorted(energy_retained, energy_threshold) + 1
+
+        # Print results
+        print(f"Assessment of {name}:")
+        print(f"Dimensions: {matrix.shape}")
+        print(f"Rank: {rank}, Condition Number: {cond_number}")
+        print(f"Suggested dimensions for retaining {energy_threshold*100}% energy: {suggested_dims}")
+        
+        return rank, cond_number, s, energy_retained
+    
+    def assess_matrix_quality_ratio(self, matrix, name="Matrix", dominance_threshold=0.90):
+        """Assess the quality of the matrix using rank, condition number, and singular value dominance."""
+        # Calculate metrics
+        rank = matrix_rank(matrix)
+        _, s, _ = svd(matrix)
+        cond_number = np.linalg.cond(matrix)
+
+        # Calculate dominance of largest singular values
+        total_singular_value_sum = np.sum(s)
+        main_dominance_ratio = s[0] / total_singular_value_sum  # Ratio of largest singular value to the sum of all
+
+        # Determine the number of dominant singular values needed to reach the threshold
+        cumulative_dominance = np.cumsum(s) / total_singular_value_sum
+        suggested_dims = np.searchsorted(cumulative_dominance, dominance_threshold) + 1
+
+        # Print results
+        print(f"Assessment of {name}:")
+        print(f"Dimensions: {matrix.shape}")
+        print(f"Rank: {rank}, Condition Number: {cond_number}")
+        print(f"Largest singular value dominance ratio: {main_dominance_ratio:.2f}")
+        print(f"Suggested dimensions for reaching {dominance_threshold*100}% dominance: {suggested_dims}")
+        
+        return rank, cond_number, s, main_dominance_ratio, cumulative_dominance
