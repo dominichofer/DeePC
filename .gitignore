@@ -162,3 +162,5 @@ cython_debug/
 # Visual Studio
 .vs/
 *.vsidx
+packages-microsoft-prod.deb
+.vscode/colcon.env

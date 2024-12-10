@@ -5,7 +5,7 @@
 
 static void check_dimensions(const std::vector<VectorXd> &var, std::string name, int size, int dims)
 {
-    if (var.size() != size)
+    if (var.size() != static_cast<std::size_t>(size))
         throw std::invalid_argument(name + ".size()=" + std::to_string(var.size()) + " but should be " + std::to_string(size) + ".");
     for (int i = 0; i < size; ++i)
         if (var[i].size() != dims)

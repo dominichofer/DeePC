@@ -3,7 +3,7 @@
 void FiniteQueue::push_back(VectorXd value)
 {
     data.push_back(std::move(value));
-    if (data.size() > max_size)
+    if (data.size() > static_cast<std::size_t>(max_size))
         data.pop_front();
 }
 
