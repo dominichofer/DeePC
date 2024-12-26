@@ -53,6 +53,32 @@ FetchContent_Declare(googlebenchmark
 )
 FetchContent_MakeAvailable(googlebenchmark)
 
+
+include(CMakePackageConfigHelpers)
+
+# sudo apt install
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/DeePCppConfigVersion.cmake"
+    VERSION 1.0.0
+    COMPATIBILITY AnyNewerVersion
+)
+
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/DeePCppConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/DeePCppConfig.cmake"
+    @ONLY
+)
+
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/DeePCppConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/DeePCppConfigVersion.cmake"
+    DESTINATION lib/cmake/DeePCpp
+)
+
+
+
+
+
 # OpenMP
 find_package(OpenMP)
 link_libraries(OpenMP::OpenMP_CXX)
