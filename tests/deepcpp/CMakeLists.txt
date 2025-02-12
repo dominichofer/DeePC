@@ -3,7 +3,7 @@ include_directories(${CMAKE_SOURCE_DIR}/src/deepcpp)
 add_executable(
     DeePCppTest
     test_algorithm.cpp
-    test_deepc.cpp
+    test_controller.cpp
     test_helpers.cpp
     test_lti.cpp
 )
