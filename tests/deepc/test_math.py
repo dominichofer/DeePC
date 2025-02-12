@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from deepc.math import linear_chirp, left_pseudoinverse, right_pseudoinverse, hankel_matrix
+from deepc.math import left_pseudoinverse, right_pseudoinverse, hankel_matrix
 
 
 class TestLeftPseudoinverse(unittest.TestCase):
@@ -75,25 +75,6 @@ class TestHankelMatrix_2D_data(unittest.TestCase):
 
     def test_size_3_and_3_rows(self):
         np.testing.assert_array_equal(hankel_matrix(3, [(1, 2), (3, 4), (5, 6)]), [[1], [2], [3], [4], [5], [6]])
-
-
-class TestLinearChirp(unittest.TestCase):
-    def test_len(self):
-        chirp = linear_chirp(0, 100, 1000)
-        self.assertEqual(len(chirp), 1000)
-
-    def test_start(self):
-        chirp = linear_chirp(0, 100, 1000)
-        self.assertAlmostEqual(chirp[0], 0)
-
-    def test_end(self):
-        chirp = linear_chirp(0, 100, 1000)
-        self.assertAlmostEqual(chirp[-1], 0)
-
-    def test_symmetry(self):
-        chirp1 = linear_chirp(0, 100, 1_000)
-        chirp2 = [-x for x in reversed(linear_chirp(100, 0, 1_000))]
-        np.testing.assert_allclose(chirp1, chirp2, atol=1e-12)
 
 
 if __name__ == "__main__":

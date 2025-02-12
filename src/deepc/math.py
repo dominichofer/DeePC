@@ -54,21 +54,3 @@ def projected_gradient_method(
             return x_new
         x_old = x_new
     return x_old
-
-
-def linear_chirp(f0: float, f1: float, samples: int, phi: float = 0) -> list[float]:
-    """
-    Generate a linear chirp signal.
-    Args:
-        f0: Start frequency in Hz.
-        f1: End frequency in Hz.
-        samples: Number of samples.
-        phi: Phase offset in radians.
-    """
-    return [
-        math.sin(
-            phi
-            + 2 * math.pi * (f0 * (i / (samples - 1)) + 0.5 * (f1 - f0) * (i / (samples - 1)) ** 2)
-        )
-        for i in range(samples)
-    ]

@@ -48,13 +48,9 @@ DiscreteLTI lti_2D_input_3D_output()
 std::tuple<std::vector<VectorXd>, std::vector<VectorXd>> gather_offline_data(DiscreteLTI &system)
 {
     const int samples = 1'000;
-    std::vector<VectorXd> u_d(samples, VectorXd::Zero(system.input_dim()));
-    for (int i = 0; i < system.input_dim(); ++i)
-    {
-        std::vector<double> chirp = linear_chirp(0, samples / 2, samples, 0.1 * i);
-        for (int j = 0; j < samples; ++j)
-            u_d[j](i) = chirp[j];
-    }
+    std::vector<VectorXd> u_d;
+    for (int i = 0; i < samples; ++i)
+        u_d.push_back(VectorXd::Random(system.input_dim()));
     std::vector<VectorXd> y_d = system.apply_multiple(u_d);
     return {u_d, y_d};
 }
