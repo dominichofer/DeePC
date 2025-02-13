@@ -74,6 +74,6 @@ public:
     bool is_initialized() const;
     void update(VectorXd u, VectorXd y);
     void clear();
-    std::vector<VectorXd> apply(const std::vector<VectorXd> &);
-    std::vector<VectorXd> apply(const VectorXd &);
+    std::vector<VectorXd> apply(const std::vector<VectorXd> &target, const std::vector<VectorXd> &offset = {});
+    std::vector<VectorXd> apply(const VectorXd &target, const VectorXd &offset = {});
 };
