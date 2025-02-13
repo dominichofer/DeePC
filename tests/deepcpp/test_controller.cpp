@@ -168,6 +168,6 @@ TEST_F(Test_2D_in_3D_out_LTI, Offset)
 {
     Controller controller{u_d, y_d, T_ini, target.size(), /*Q*/1.0, /*R*/0.001};
     warm_up_controller(controller, system, Vector(1, 1));
-    VectorXd y = control_system(controller, system, target, T_ini, {Vector(1, 1));
+    VectorXd y = control_system(controller, system, target, T_ini, {Vector(1, 1)});
     expect_near(y, target[0], 0.05);
 }
