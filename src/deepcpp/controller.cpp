@@ -145,7 +145,7 @@ std::vector<VectorXd> Controller::apply(const std::vector<VectorXd> &target, con
     check_dimensions(target, "target", target_size, output_dims);
 
     if (!offset.empty())
-        check_dimensions(offset, "offset", target_size, output_dims);
+        check_dimensions(offset, "offset", target_size, input_dims);
     
     // Flatten
     VectorXd target_ = concat(target);
