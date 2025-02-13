@@ -76,12 +76,17 @@ void warm_up_controller(Controller& controller, DiscreteLTI& system, const Vecto
 
 // Control the system for a given number of time steps.
 // Returns the output of the system after the last time step.
-VectorXd control_system(Controller& controller, DiscreteLTI& system, const std::vector<VectorXd>& target, int time_steps)
+VectorXd control_system(
+    Controller& controller,
+    DiscreteLTI& system,
+    const std::vector<VectorXd>& target,
+    int time_steps,
+    const std::vector<VectorXd>& offset = {})
 {
     VectorXd u, y;
     for (int i = 0; i < time_steps; ++i)
     {
-        u = controller.apply(target).front();
+        u = controller.apply(target, offset).front();
         y = system.apply(u);
         controller.update(u, y);
     }
@@ -119,6 +124,14 @@ TEST_F(Test_1D_in_1D_out_LTI, Constrained)
     expect_near(y, target[0], 1e-5);
 }
 
+TEST_F(Test_1D_in_1D_out_LTI, Offset)
+{
+    Controller controller{u_d, y_d, T_ini, target.size(), /*Q*/1.0, /*R*/0.001};
+    warm_up_controller(controller, system, Vector(1));
+    VectorXd y = control_system(controller, system, target, T_ini, {Vector(10), Vector(10)});
+    expect_near(y, target[0], 0.02);
+}
+
 
 class Test_2D_in_3D_out_LTI : public ::testing::Test
 {
@@ -148,5 +161,13 @@ TEST_F(Test_2D_in_3D_out_LTI, Constrained)
                           [](const VectorXd &u) { return clamp(u, -15, 15); }};
     warm_up_controller(controller, system, Vector(1, 1));
     VectorXd y = control_system(controller, system, target, 2 * T_ini);
+    expect_near(y, target[0], 0.05);
+}
+
+TEST_F(Test_2D_in_3D_out_LTI, Offset)
+{
+    Controller controller{u_d, y_d, T_ini, target.size(), /*Q*/1.0, /*R*/0.001};
+    warm_up_controller(controller, system, Vector(1, 1));
+    VectorXd y = control_system(controller, system, target, T_ini, {Vector(1, 1)});
     expect_near(y, target[0], 0.05);
 }

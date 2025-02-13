@@ -137,18 +137,22 @@ void Controller::clear()
     y_ini.clear();
 }
 
-std::vector<VectorXd> Controller::apply(const std::vector<VectorXd> &target)
+std::vector<VectorXd> Controller::apply(const std::vector<VectorXd> &target, const std::vector<VectorXd> &offset)
 {
     if (!is_initialized())
         return {};
 
     check_dimensions(target, "target", target_size, output_dims);
 
+    if (!offset.empty())
+        check_dimensions(offset, "offset", target_size, input_dims);
+    
     // Flatten
     VectorXd target_ = concat(target);
+    VectorXd offset_ = offset.empty() ? VectorXd::Zero(target_size * output_dims) : concat(offset);
 
     auto x = concat(u_ini.get(), y_ini.get());
-    auto w = M_u.transpose() * Q * (target_ - M_x * x);
+    auto w = M_u.transpose() * Q * (target_ - M_x * x) + R * offset_;
     auto u_star = G.ldlt().solve(w).eval();
 
     if (input_constrain_fkt != nullptr)
@@ -163,7 +167,10 @@ std::vector<VectorXd> Controller::apply(const std::vector<VectorXd> &target)
     return split(u_star, target_size);
 }
 
-std::vector<VectorXd> Controller::apply(const VectorXd &target)
+std::vector<VectorXd> Controller::apply(const VectorXd &target, const VectorXd &offset)
 {
-    return apply(std::vector<VectorXd>{target});
+    return apply(
+        std::vector<VectorXd>{target},
+        offset.size() == 0 ? std::vector<VectorXd>{} : std::vector<VectorXd>{offset}
+    );
 }
