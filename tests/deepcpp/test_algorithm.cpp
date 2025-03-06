@@ -171,7 +171,7 @@ TEST(HankelMatrix_2D_data, Size_3_and_3_row)
 	EXPECT_EQ(res, expected);
 }
 
-TEST(Algorithm, ProjectedGradientMethod)
+TEST(Algorithm, projected_gradient_method)
 {
 	auto mat = Matrix({1, 0}, {0, 1});
 	auto initial_guess = Vector(1, 1);
@@ -180,5 +180,5 @@ TEST(Algorithm, ProjectedGradientMethod)
 
 	auto res = projected_gradient_method(mat, initial_guess, target, projection);
 
-	EXPECT_EQ(res, Vector(0, 0));
+	EXPECT_LE(res.norm(), 1e-6);
 }

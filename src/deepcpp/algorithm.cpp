@@ -112,7 +112,7 @@ VectorXd projected_gradient_method(
     double tolerance)
 {
     double step_size = 1 / mat.norm();
-    VectorXd x_old = projection(target);
+    VectorXd x_old = projection(initial_guess);
     for (int i = 0; i < max_iterations; ++i)
     {
         VectorXd x_new = projection(x_old - step_size * (mat * x_old - target));
