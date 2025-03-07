@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 from math import pi, sin
+=======
+>>>>>>> origin/main
 from typing import Callable
 import numpy as np
 
@@ -64,6 +67,7 @@ def projected_gradient_method(
             return x_new
         x_old = x_new
     return x_old
+<<<<<<< HEAD
 
 
 
@@ -171,3 +175,5 @@ def linear_chirp(f0: float, f1: float, samples: int, phi: float = 0) -> list[flo
         )
         for i in range(samples)
     ]
+=======
+>>>>>>> origin/main

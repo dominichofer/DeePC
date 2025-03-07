@@ -3,7 +3,18 @@ from typing import Callable
 import numpy as np
 from numpy.linalg import matrix_rank, svd
 from .math import hankel_matrix, projected_gradient_method
-from .deepc import as_column_vector, check_dimensions
+
+
+def as_column_vector(v: list | np.ndarray) -> np.ndarray:
+    v = np.array(v)
+    if v.ndim == 1:
+        return v.reshape(-1, 1)
+    return v
+
+
+def check_dimensions(var: np.ndarray, name: str, size: int, dims: int) -> None:
+    "Checks the dimensions of a variable."
+    assert var.shape == (size, dims), f"{name}.shape={var.shape} but should be ({size}, {dims})."
 
 class Controller:
     def __init__(

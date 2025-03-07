@@ -122,16 +122,3 @@ VectorXd projected_gradient_method(
     }
     return x_old;
 }
-
-std::vector<double> linear_chirp(double f0, double f1, int samples, int phi)
-{
-    double Pi = 3.14159265358979323846;
-    std::vector<double> res;
-    res.reserve(samples);
-    for (int i = 0; i < samples; ++i)
-    {
-        double t = i / (samples - 1.0);
-        res.push_back(std::sin(phi + 2 * Pi * (f0 * t + 0.5 * (f1 - f0) * t * t)));
-    }
-    return res;
-}

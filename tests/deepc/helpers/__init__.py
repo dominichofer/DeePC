@@ -1,4 +1,5 @@
-from deepc import DiscreteLTI, linear_chirp
+import numpy as np
+from deepc import DiscreteLTI
 
 
 def create_1D_in_1D_out_LTI() -> DiscreteLTI:
@@ -36,10 +37,6 @@ def create_2D_in_3D_out_LTI() -> DiscreteLTI:
 
 
 def gather_offline_data(system: DiscreteLTI, samples: int) -> tuple:
-    if system.input_dim == 1:
-        u_d = linear_chirp(0, samples / 2, samples)
-    else:
-        chirps = [linear_chirp(0, samples / 2, samples, 0.1 * i) for i in range(system.input_dim)]
-        u_d = list(zip(*chirps))  # Transpose the list of chirp signals
+    u_d = np.random.uniform(-1, 1, (samples, system.input_dim))
     y_d = system.apply_multiple(u_d)
     return u_d, y_d

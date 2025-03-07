@@ -4,8 +4,6 @@ add_library(
     algorithm.cpp
     controller.h
     controller.cpp
-    deepc.h
-    deepc.cpp
     finite_queue.h
     finite_queue.cpp
     lti.h

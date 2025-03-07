@@ -182,29 +182,3 @@ TEST(Algorithm, ProjectedGradientMethod)
 
 	EXPECT_EQ(res, Vector(0, 0));
 }
-
-TEST(LinearChirp, Size)
-{
-	auto chirp = linear_chirp(0, 100, 1'000);
-	EXPECT_EQ(chirp.size(), 1'000);
-}
-
-TEST(LinearChirp, Start)
-{
-	auto chirp = linear_chirp(0, 100, 1'000);
-	EXPECT_NEAR(chirp[0], 0, 1e-12);
-}
-
-TEST(LinearChirp, End)
-{
-	auto chirp = linear_chirp(0, 100, 1'000);
-	EXPECT_NEAR(chirp[999], 0, 1e-12);
-}
-
-TEST(LinearChirp, Symmetry)
-{
-	auto chirp1 = linear_chirp(0, 100, 1'000);
-	auto chirp2 = linear_chirp(100, 0, 1'000);
-	for (int i = 0; i < 1'000; ++i)
-		EXPECT_NEAR(chirp1[i], -chirp2[999 - i], 1e-12);
-}
