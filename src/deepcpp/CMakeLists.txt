@@ -17,7 +17,6 @@ install(
     FILES
         algorithm.h
         controller.h
-        deepc.h
         finite_queue.h
         lti.h
     DESTINATION include/DeePCpp
