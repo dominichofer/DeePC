@@ -149,7 +149,7 @@ std::vector<VectorXd> Controller::apply(const std::vector<VectorXd> &target, con
     
     // Flatten
     VectorXd target_ = concat(target);
-    VectorXd offset_ = offset.empty() ? VectorXd::Zero(target_size * output_dims) : concat(offset);
+    VectorXd offset_ = offset.empty() ? VectorXd::Zero(target_size * input_dims) : concat(offset);
 
     auto x = concat(u_ini.get(), y_ini.get());
     auto w = M_u.transpose() * Q * (target_ - M_x * x) + R * offset_;
