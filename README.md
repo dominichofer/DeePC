@@ -24,7 +24,7 @@ To run the provided tests, execute `python -m unittest discover tests/deepc`.<br
 To build the C++ library into a folder `build`, run
 ```bash
 cmake -B build
-make -C build
+cmake --build build
 ```
 To run the provided tests, execute `make -C build test`.<br>
 (The GitHub actions run them on every commit.)<br>
