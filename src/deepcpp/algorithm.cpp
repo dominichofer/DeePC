@@ -82,13 +82,20 @@ MatrixXd vstack(const MatrixXd& upper, const MatrixXd& lower)
     return res;
 }
 
-MatrixXd vstack(const MatrixXd& upper, const MatrixXd& middle, const MatrixXd& lower)
+Eigen::MatrixXd vstack(const Eigen::MatrixXd& upper,
+                       const Eigen::MatrixXd& middle,
+                       const Eigen::MatrixXd& lower)
 {
     assert(upper.cols() == middle.cols());
     assert(upper.cols() == lower.cols());
 
-    MatrixXd res(upper.rows() + middle.rows() + lower.rows(), upper.cols());
-    res << upper, middle, lower;
+    const int rows = upper.rows() + middle.rows() + lower.rows();
+    const int cols = upper.cols();
+
+    Eigen::MatrixXd res(rows, cols);           // heap-aligned by Eigen
+    res.topRows(upper.rows())                              = upper;
+    res.middleRows(upper.rows(), middle.rows())            = middle;
+    res.bottomRows(lower.rows())                           = lower;
     return res;
 }
 
