@@ -82,20 +82,39 @@ MatrixXd vstack(const MatrixXd& upper, const MatrixXd& lower)
     return res;
 }
 
-Eigen::MatrixXd vstack(const Eigen::MatrixXd& upper,
-                       const Eigen::MatrixXd& middle,
-                       const Eigen::MatrixXd& lower)
+#include <iostream>
+#include <cstdint>  // for uintptr_t
+
+MatrixXd vstack(const MatrixXd& upper,
+                const MatrixXd& middle,
+                const MatrixXd& lower)
 {
-    assert(upper.cols() == middle.cols());
-    assert(upper.cols() == lower.cols());
+    assert(upper.cols() == middle.cols() && upper.cols() == lower.cols());
+    const int ru = upper.rows(),  cu = upper.cols();
+    const int rm = middle.rows(), cm = middle.cols(); // == cu
+    const int rl = lower.rows(),  cl = lower.cols(); // == cu
+    const int rows = ru + rm + rl, cols = cu;
 
-    const int rows = upper.rows() + middle.rows() + lower.rows();
-    const int cols = upper.cols();
+    std::cout 
+      << "[DeePCpp::vstack] upper=" << ru  << "×" << cu
+      << ", middle="    << rm  << "×" << cm
+      << ", lower="     << rl  << "×" << cl
+      << " → total="    << rows << "×" << cols << "\n";
 
-    Eigen::MatrixXd res(rows, cols);           // heap-aligned by Eigen
-    res.topRows(upper.rows())                              = upper;
-    res.middleRows(upper.rows(), middle.rows())            = middle;
-    res.bottomRows(lower.rows())                           = lower;
+    MatrixXd res(rows, cols);  // heap → guaranteed 32B‐aligned by Eigen
+    auto ptr = reinterpret_cast<uintptr_t>(res.data());
+    std::cout 
+      << "[DeePCpp::vstack] res.data()=" << static_cast<void*>(res.data())
+      << "  (mod32=" << (ptr % 32) << ")\n";
+
+    // Safe, block‐by‐block copies:
+    res.topRows   (ru)                 = upper;
+    res.middleRows(ru, rm)             = middle;
+    res.bottomRows(rl)                 = lower;
+
+    std::cout 
+      << "[DeePCpp::vstack] copy done: first=" << res(0,0)
+      << " last=" << res(rows-1, cols-1) << "\n";
     return res;
 }
 

@@ -1,4 +1,5 @@
 #pragma once
+#define EIGEN_UNALIGNED_VECTORIZE 1  
 #include <Eigen/Dense>
 #include <functional>
 #include <string>

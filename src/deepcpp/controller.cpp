@@ -2,6 +2,7 @@
 #include "algorithm.h"
 #include <stdexcept>
 #include <string>
+#include <iostream>
 
 static void check_dimensions(const std::vector<VectorXd> &var, std::string name, int size, int dims)
 {
@@ -10,6 +11,31 @@ static void check_dimensions(const std::vector<VectorXd> &var, std::string name,
     for (int i = 0; i < size; ++i)
         if (var[i].size() != dims)
             throw std::invalid_argument(name + "[" + std::to_string(i) + "].size()=" + std::to_string(var[i].size()) + " but should be " + std::to_string(dims) + ".");
+}
+
+using Eigen::Index;
+using Eigen::MatrixXd;
+
+/* ------------------------------------------------------------------ */
+/*  Helper: deep-copy a MatrixBase expression without Eigen’s packets  */
+/* ------------------------------------------------------------------ */
+template <class Derived>
+MatrixXd safeCopy(const Eigen::MatrixBase<Derived>& src)
+{
+    const Index rows = src.rows();
+    const Index cols = src.cols();
+
+    MatrixXd dst(rows, cols);            // heap allocation (any alignment)
+    const double* srcPtr = src.derived().data();
+    double*       dstPtr = dst.data();
+
+    // contiguous, row-major ⇒ one memcpy per row
+    for (Index r = 0; r < rows; ++r)
+        std::memcpy(dstPtr + r * cols,      // write to row r
+                    srcPtr + r * cols,      // read  from row r
+                    sizeof(double) * cols);
+
+    return dst;            // NRVO / move-elided
 }
 
 Controller::Controller(
@@ -64,19 +90,49 @@ Controller::Controller(
     if (R.rows() != target_size * input_dims)
         throw std::invalid_argument("R.rows()=" + std::to_string(R.rows()) + " but should be " + std::to_string(target_size * input_dims) + ".");
 
-    auto U = HankelMatrix(T_ini + target_size, u_d);
-    auto U_p = U.block(0, 0, T_ini * input_dims, U.cols()); // past
-    auto U_f = U.block(T_ini * input_dims, 0, U.rows() - T_ini * input_dims, U.cols()); // future
-    auto Y = HankelMatrix(T_ini + target_size, y_d);
-    auto Y_p = Y.block(0, 0, T_ini * output_dims, Y.cols()); // past
-    auto Y_f = Y.block(T_ini * output_dims, 0, Y.rows() - T_ini * output_dims, Y.cols()); // future
+    //MatrixXd U = HankelMatrix(T_ini + target_size, u_d);
+    //MatrixXd Y = HankelMatrix(T_ini + target_size, y_d);
 
-    // Now solving
-    // minimize: ||y - target||_Q^2 + ||u||_R^2
-    // subject to: [U_p; Y_p; U_f; Y_f] * g = [u_ini; y_ini; u; y]
+    // here the segfault happens if using eval.
+    //MatrixXd U_p = U.block(0, 0, T_ini * input_dims, U.cols()).eval(); // past
+    //MatrixXd U_f = U.block(T_ini * input_dims, 0, U.rows() - T_ini * input_dims, U.cols()).eval(); // future
+    //MatrixXd Y_p = Y.block(0, 0, T_ini * output_dims, Y.cols()).eval(); // past
+    //MatrixXd Y_f = Y.block(T_ini * output_dims, 0, Y.rows() - T_ini * output_dims, Y.cols()).eval(); // future
+
+    /* -----------------------  your original code  ---------------------- */
+
+    auto U     = HankelMatrix(T_ini + target_size, u_d);
+    auto U_p_v = U.block(0, 0, T_ini * input_dims, U.cols());                // past view
+    auto U_f_v = U.block(T_ini * input_dims, 0,
+                        U.rows() - T_ini * input_dims, U.cols());           // future view
+
+    auto Y     = HankelMatrix(T_ini + target_size, y_d);
+    auto Y_p_v = Y.block(0, 0, T_ini * output_dims, Y.cols());               // past view
+    auto Y_f_v = Y.block(T_ini * output_dims, 0,
+                        Y.rows() - T_ini * output_dims, Y.cols());          // future view
+
+    /* -----------------------  safe deep copies  ------------------------ */
+
+    std::cout << "copying  U_p …\n";
+    MatrixXd U_p = safeCopy(U_p_v);
+
+    std::cout << "copying  U_f …\n";
+    MatrixXd U_f = safeCopy(U_f_v);
+
+    std::cout << "copying  Y_p …\n";
+    MatrixXd Y_p = safeCopy(Y_p_v);
+
+    std::cout << "copying  Y_f …\n";
+    MatrixXd Y_f = safeCopy(Y_f_v);
+
+    /* -----------------------  continue as before  ---------------------- */
+
+    std::cout << "calling vstack …\n";
+    auto A = vstack(U_p, Y_p, U_f);      // <- now safe
+
 
     // We define
-    auto A = vstack(U_p, Y_p, U_f);
+    //auto A = vstack(U_p, Y_p, U_f);
     // x = [u_ini; y_ini]
     // to get
     // A * g = [x; u]  (1)
@@ -94,8 +150,21 @@ Controller::Controller(
     // We define [M_x; M_u] := M
     // such that M_x * x + M_u * u = y.
     const int dim_sum = input_dims + output_dims;
-    M_x = M.block(0, 0, M.rows(), T_ini * dim_sum);
-    M_u = M.block(0, T_ini * dim_sum, M.rows(), M.cols() - T_ini * dim_sum);
+    /* ----------------  safe copies for M_x and M_u  ------------------- */
+
+    // 1. create cheap views
+    auto M_x_view = M.block(0, 0,
+                            M.rows(),               // all rows
+                            T_ini * dim_sum);       // past horizon columns
+
+    auto M_u_view = M.block(0, T_ini * dim_sum,
+                            M.rows(),               // all rows
+                            M.cols() - T_ini * dim_sum);   // remaining columns
+
+    // got the segfault moved to here.
+    // 2. deep-copy row-wise → never hits mis-aligned AVX stores
+    MatrixXd M_x = safeCopy(M_x_view.eval());
+    MatrixXd M_u = safeCopy(M_u_view.eval());
 
     // We can now solve the unconstrained problem.
     // This is a ridge regression problem with generalized Tikhonov regularization.

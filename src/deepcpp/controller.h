@@ -1,5 +1,6 @@
 #pragma once
 #include "finite_queue.h"
+#define EIGEN_UNALIGNED_VECTORIZE 1  
 #include <Eigen/Dense>
 #include <functional>
 #include <variant>
