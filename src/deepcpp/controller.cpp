@@ -29,11 +29,12 @@ MatrixXd safeCopy(const Eigen::MatrixBase<Derived>& src)
     const double* srcPtr = src.derived().data();
     double*       dstPtr = dst.data();
 
-    // contiguous, row-major ⇒ one memcpy per row
-    for (Index r = 0; r < rows; ++r)
-        std::memcpy(dstPtr + r * cols,      // write to row r
-                    srcPtr + r * cols,      // read  from row r
+    Index outerStride = src.outerStride();  // actual distance in elements between consecutive rows of src
+    for (Index r = 0; r < rows; ++r) {
+        std::memcpy(dstPtr + r * cols,
+                    srcPtr + r * outerStride,
                     sizeof(double) * cols);
+    }
 
     return dst;            // NRVO / move-elided
 }
@@ -152,20 +153,28 @@ Controller::Controller(
     const int dim_sum = input_dims + output_dims;
     /* ----------------  safe copies for M_x and M_u  ------------------- */
 
-    // 1. create cheap views
-    auto M_x_view = M.block(0, 0,
-                            M.rows(),               // all rows
-                            T_ini * dim_sum);       // past horizon columns
-
-    auto M_u_view = M.block(0, T_ini * dim_sum,
-                            M.rows(),               // all rows
-                            M.cols() - T_ini * dim_sum);   // remaining columns
+    if (T_ini * dim_sum > M.cols())
+        throw std::logic_error("M_x_view would reach past the right edge of M");
 
     // got the segfault moved to here.
     // 2. deep-copy row-wise → never hits mis-aligned AVX stores
-    MatrixXd M_x = safeCopy(M_x_view.eval());
-    MatrixXd M_u = safeCopy(M_u_view.eval());
+    using RowMajorMat =
+            Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>;
 
+    /* deep-copy past-horizon columns → M_x (member) */
+    M_x = RowMajorMat(
+            M.block(0, 0,
+                    M.rows(),
+                    T_ini * dim_sum) );
+
+    /* deep-copy future-horizon columns → M_u (member) */
+    M_u = RowMajorMat(
+            M.block(0, T_ini * dim_sum,
+                    M.rows(),
+                    M.cols() - T_ini * dim_sum) );
+
+    std::cout << "M_x  shape: " << M_x.rows() << " × " << M_x.cols() << '\n';
+    std::cout << "M_u  shape: " << M_u.rows() << " × " << M_u.cols() << '\n';
     // We can now solve the unconstrained problem.
     // This is a ridge regression problem with generalized Tikhonov regularization.
     // https://en.wikipedia.org/wiki/Ridge_regression//Generalized_Tikhonov_regularization
